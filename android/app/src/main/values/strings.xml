@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Openlist Syncer</string>
+    <string name="app_description">Sync files from Openlist server to your device</string>
+</resources>
