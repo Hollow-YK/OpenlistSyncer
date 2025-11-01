@@ -45,9 +45,14 @@
 
 ### 前置条件
 
+你需要有一个使用 [OpenList](https://github.com/OpenListTeam/OpenList) 搭建的或 API 与 OpenList 相同的私有云（使用到了 [User logout](https://fox.oplist.org/364155678e0)、[User login](https://fox.oplist.org/364155681e0)、[List directory contents](https://fox.oplist.org/364155732e0)、[Get file or directory info](https://fox.oplist.org/364155733e0)、[Get directory tree](https://fox.oplist.org/364155735e0)）
+
 <details>
 
-你需要有一个使用 [OpenList](https://github.com/OpenListTeam/OpenList) 搭建的或 API 与 OpenList 相同的私有云（使用到了 [User logout](https://fox.oplist.org/364155678e0)、[User login](https://fox.oplist.org/364155681e0)、[List directory contents](https://fox.oplist.org/364155732e0)、[Get file or directory info](https://fox.oplist.org/364155733e0)、[Get directory tree](https://fox.oplist.org/364155735e0)）
+### 自行编译
+
+1. clone本仓库
+2. `flutter build apk --release`打包 APK ，或`flutter build apk --split-per-abi`为每个 abi 打包 APK
 
 </details>
 
