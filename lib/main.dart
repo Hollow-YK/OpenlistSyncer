@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'ui/android/login_page.dart';
 import 'ui/android/sync_page.dart';
+import 'ui/android/settings_page.dart';
 
 // 应用入口点
 void main() {
@@ -85,6 +86,13 @@ class _MainAppState extends State<MainApp> {
         isLoggedIn: _isLoggedIn,
         onAuthStatusChanged: _updateAuthStatus,
       ),
+      SettingsPage( // 设置页面
+        addressController: _addressController,
+        authToken: _authToken,
+        loggedInUser: _loggedInUser,
+        isLoggedIn: _isLoggedIn,
+        onAuthStatusChanged: _updateAuthStatus,
+      ),
     ];
 
     return Scaffold(
@@ -110,6 +118,10 @@ class _MainAppState extends State<MainApp> {
               child: const Icon(Icons.sync), // 同步图标
             ),
             label: '同步', // 标签文本
+          ),
+          BottomNavigationBarItem( // 设置导航项
+            icon: const Icon(Icons.settings),
+            label: '设置',
           ),
         ],
       ),
