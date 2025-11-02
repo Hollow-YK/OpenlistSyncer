@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart'; // 文件选择器
 import 'package:path/path.dart' as path;
-import 'package:permission_handler/permission_handler.dart';
-import 'package:path_provider/path_provider.dart';
-import '../../services/openlist_service.dart'; // 修正导入路径
+import 'package:permission_handler/permission_handler.dart'; // 权限处理
+import 'package:path_provider/path_provider.dart'; // 路径提供器
+import '../../services/openlist_service.dart'; // 导入Openlist服务
 
+// 同步页面组件
 class SyncPage extends StatefulWidget {
   final TextEditingController addressController;
   final String? authToken;
@@ -25,41 +26,44 @@ class SyncPage extends StatefulWidget {
   State<SyncPage> createState() => _SyncPageState();
 }
 
+// 同步页面状态类
 class _SyncPageState extends State<SyncPage> {
-  final TextEditingController _sourcePathController = TextEditingController();
-  final TextEditingController _localPathController = TextEditingController();
-  final OpenlistService _openlistService = OpenlistService();
+  final TextEditingController _sourcePathController = TextEditingController(); // 源路径控制器
+  final TextEditingController _localPathController = TextEditingController(); // 本地路径控制器
+  final OpenlistService _openlistService = OpenlistService(); // Openlist服务实例
 
-  bool _isSyncing = false;
-  bool _hasStoragePermission = false;
-  final List<SyncFile> _fileList = [];
-  int _totalFiles = 0;
-  int _processedFiles = 0;
-  String _currentFileName = '';
+  bool _isSyncing = false; // 同步状态标识
+  bool _hasStoragePermission = false; // 存储权限状态
+  final List<SyncFile> _fileList = []; // 文件列表
+  int _totalFiles = 0; // 总文件数
+  int _processedFiles = 0; // 已处理文件数
+  String _currentFileName = ''; // 当前文件名
   
   // 同步日志相关状态
-  final List<String> _syncLogs = [];
-  bool _showLogs = false;
+  final List<String> _syncLogs = []; // 日志列表
+  bool _showLogs = false; // 是否显示日志
 
   @override
   void initState() {
     super.initState();
-    _initializeApp();
+    _initializeApp(); // 初始化应用
   }
 
+  // 初始化应用
   Future<void> _initializeApp() async {
-    await _checkPermissions();
-    await _initializeLocalPath();
+    await _checkPermissions(); // 检查权限
+    await _initializeLocalPath(); // 初始化本地路径
   }
 
+  // 检查权限
   Future<void> _checkPermissions() async {
     try {
-      final storageStatus = await Permission.storage.status;
-      final manageExternalStatus = await Permission.manageExternalStorage.status;
+      final storageStatus = await Permission.storage.status; // 存储权限状态
+      final manageExternalStatus = await Permission.manageExternalStorage.status; // 外部存储管理权限
       
       if (!mounted) return;
       setState(() {
-        _hasStoragePermission = storageStatus.isGranted || manageExternalStatus.isGranted;
+        _hasStoragePermission = storageStatus.isGranted || manageExternalStatus.isGranted; // 任一权限授予即可
       });
     } catch (e) {
       debugPrint('Permission check error: $e');
@@ -70,10 +74,11 @@ class _SyncPageState extends State<SyncPage> {
     }
   }
 
+  // 请求权限
   Future<void> _requestPermissions() async {
     try {
-      final storageStatus = await Permission.storage.request();
-      final manageStatus = await Permission.manageExternalStorage.request();
+      final storageStatus = await Permission.storage.request(); // 请求存储权限
+      final manageStatus = await Permission.manageExternalStorage.request(); // 请求外部存储管理权限
       
       if (!mounted) return;
       setState(() {
@@ -83,7 +88,7 @@ class _SyncPageState extends State<SyncPage> {
       if (!_hasStoragePermission) {
         _showSnackBar('需要存储权限才能同步文件');
         if (storageStatus.isPermanentlyDenied || manageStatus.isPermanentlyDenied) {
-          _showPermissionDialog();
+          _showPermissionDialog(); // 显示权限请求对话框
         }
       }
     } catch (e) {
@@ -92,6 +97,7 @@ class _SyncPageState extends State<SyncPage> {
     }
   }
 
+  // 显示权限请求对话框
   Future<void> _showPermissionDialog() async {
     if (!mounted) return;
     return showDialog(
@@ -102,13 +108,13 @@ class _SyncPageState extends State<SyncPage> {
           content: const Text('同步文件需要访问设备存储的权限。请授予"所有文件管理"权限。'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pop(), // 取消
               child: const Text('取消'),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                openAppSettings();
+                openAppSettings(); // 打开应用设置
               },
               child: const Text('去设置'),
             ),
@@ -118,13 +124,14 @@ class _SyncPageState extends State<SyncPage> {
     );
   }
 
+  // 初始化本地路径
   Future<void> _initializeLocalPath() async {
     try {
-      final directory = await getExternalStorageDirectory();
+      final directory = await getExternalStorageDirectory(); // 获取外部存储目录
       if (directory != null) {
         if (!mounted) return;
         setState(() {
-          _localPathController.text = directory.path;
+          _localPathController.text = directory.path; // 设置外部存储路径
         });
         return;
       }
@@ -133,23 +140,24 @@ class _SyncPageState extends State<SyncPage> {
     }
     
     try {
-      final directory = await getApplicationDocumentsDirectory();
+      final directory = await getApplicationDocumentsDirectory(); // 获取应用文档目录
       if (!mounted) return;
       setState(() {
-        _localPathController.text = directory.path;
+        _localPathController.text = directory.path; // 设置应用文档路径
       });
     } catch (e) {
       debugPrint('Application documents directory not available: $e');
       if (!mounted) return;
       setState(() {
-        _localPathController.text = '/storage/emulated/0/Download';
+        _localPathController.text = '/storage/emulated/0/Download'; // 默认下载路径
       });
     }
   }
 
+  // 选择本地路径
   Future<void> _selectLocalPath() async {
     if (!_hasStoragePermission) {
-      await _requestPermissions();
+      await _requestPermissions(); // 先请求权限
       if (!_hasStoragePermission) {
         return;
       }
@@ -157,25 +165,26 @@ class _SyncPageState extends State<SyncPage> {
 
     try {
       String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: '选择同步目录',
+        dialogTitle: '选择同步目录', // 对话框标题
         initialDirectory: _localPathController.text.isNotEmpty 
             ? _localPathController.text 
-            : null,
+            : null, // 初始目录
       );
 
       if (selectedDirectory != null && selectedDirectory.isNotEmpty) {
         if (!mounted) return;
         setState(() {
-          _localPathController.text = selectedDirectory;
+          _localPathController.text = selectedDirectory; // 更新本地路径
         });
       }
     } catch (e) {
       debugPrint('Error selecting directory: $e');
       _showSnackBar('选择路径时出错: $e');
-      _showFallbackPathSelector();
+      _showFallbackPathSelector(); // 显示备选路径选择器
     }
   }
 
+  // 显示备选路径选择器
   Future<void> _showFallbackPathSelector() async {
     if (!mounted) return;
     final result = await showDialog<String>(
@@ -192,19 +201,19 @@ class _SyncPageState extends State<SyncPage> {
             FilledButton(
               onPressed: () async {
                 final directory = await getExternalStorageDirectory();
-                Navigator.pop(context, directory?.path);
+                Navigator.pop(context, directory?.path); // 返回外部存储路径
               },
               child: const Text('外部存储'),
             ),
             FilledButton(
               onPressed: () async {
                 final directory = await getApplicationDocumentsDirectory();
-                Navigator.pop(context, directory.path);
+                Navigator.pop(context, directory.path); // 返回应用文档路径
               },
               child: const Text('应用文档'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, '/storage/emulated/0/Download'),
+              onPressed: () => Navigator.pop(context, '/storage/emulated/0/Download'), // 返回下载路径
               child: const Text('下载文件夹'),
             ),
           ],
@@ -215,110 +224,114 @@ class _SyncPageState extends State<SyncPage> {
     if (result != null && result.isNotEmpty) {
       if (!mounted) return;
       setState(() {
-        _localPathController.text = result;
+        _localPathController.text = result; // 更新路径
       });
     }
   }
 
-Future<void> _startSync() async {
-  if (widget.addressController.text.isEmpty ||
-      _sourcePathController.text.isEmpty ||
-      _localPathController.text.isEmpty) {
-    _showSnackBar('请填写所有必填字段');
-    return;
-  }
-
-  if (!widget.isLoggedIn) {
-    _showSnackBar('请先登录Openlist');
-    return;
-  }
-
-  if (!_hasStoragePermission) {
-    await _requestPermissions();
-    if (!_hasStoragePermission) {
-      _showSnackBar('需要存储权限才能同步文件');
+  // 开始同步
+  Future<void> _startSync() async {
+    // 验证输入字段
+    if (widget.addressController.text.isEmpty ||
+        _sourcePathController.text.isEmpty ||
+        _localPathController.text.isEmpty) {
+      _showSnackBar('请填写所有必填字段');
       return;
     }
-  }
 
-  if (!mounted) return;
-  setState(() {
-    _isSyncing = true;
-    _fileList.clear();
-    _totalFiles = 0;
-    _processedFiles = 0;
-    _currentFileName = '';
-    _syncLogs.clear();
-    _addLog('开始同步文件...');
-    _addLog('服务器地址: ${widget.addressController.text.trim()}');
-    _addLog('源路径: ${_sourcePathController.text.trim()}');
-    _addLog('本地路径: ${_localPathController.text.trim()}');
-    _addLog('认证令牌: ${widget.authToken != null ? "已设置" : "未设置"}');
-  });
+    if (!widget.isLoggedIn) {
+      _showSnackBar('请先登录Openlist');
+      return;
+    }
 
-  try {
-    final result = await _openlistService.syncFolder(
-      address: widget.addressController.text.trim(),
-      authToken: widget.authToken,
-      sourcePath: _sourcePathController.text.trim(),
-      localPath: _localPathController.text.trim(),
-      onProgress: (fileList, totalFiles, processedFiles, currentFileName) {
-        if (!mounted) return;
-        setState(() {
-          _fileList.clear();
-          _fileList.addAll(fileList);
-          _totalFiles = totalFiles;
-          _processedFiles = processedFiles;
-          _currentFileName = currentFileName;
-        });
-      },
-      onLog: _addLog,
-      onTokenExpired: () { // 新增：令牌过期回调
-        if (!mounted) return;
-        _addLog('认证令牌已过期，需要重新登录');
-        widget.onAuthStatusChanged(null, null, false);
-        _showSnackBar('密码已更改，请重新登录');
-      },
-    );
-    
-    if (result) {
-      _addLog('同步完成！共同步 $_totalFiles 个文件');
-      _showSnackBar('同步完成！共同步 $_totalFiles 个文件');
-    } else {
-      _addLog('部分文件同步失败');
-      _showSnackBar('部分文件同步失败，请查看日志');
+    if (!_hasStoragePermission) {
+      await _requestPermissions();
+      if (!_hasStoragePermission) {
+        _showSnackBar('需要存储权限才能同步文件');
+        return;
+      }
     }
-  } catch (e) {
-    _addLog('同步出错: $e');
-    
-    // 更详细的错误处理
-    if (e.toString().contains('密码已更改') || e is TokenExpiredException) {
-      _showSnackBar('密码已更改，请重新登录');
-      // 自动触发重新登录
-      widget.onAuthStatusChanged(null, null, false);
-    } else if (e.toString().contains('认证令牌')) {
-      _showSnackBar('认证失败，请重新登录');
-      // 自动触发重新登录
-      widget.onAuthStatusChanged(null, null, false);
-    } else {
-      _showSnackBar('同步出错: $e');
-    }
-  } finally {
+
     if (!mounted) return;
     setState(() {
-      _isSyncing = false;
+      _isSyncing = true; // 开始同步
+      _fileList.clear(); // 清空文件列表
+      _totalFiles = 0;
+      _processedFiles = 0;
+      _currentFileName = '';
+      _syncLogs.clear(); // 清空日志
+      _addLog('开始同步文件...');
+      _addLog('服务器地址: ${widget.addressController.text.trim()}');
+      _addLog('源路径: ${_sourcePathController.text.trim()}');
+      _addLog('本地路径: ${_localPathController.text.trim()}');
+      _addLog('认证令牌: ${widget.authToken != null ? "已设置" : "未设置"}');
     });
-  }
-}
 
+    try {
+      final result = await _openlistService.syncFolder(
+        address: widget.addressController.text.trim(),
+        authToken: widget.authToken,
+        sourcePath: _sourcePathController.text.trim(),
+        localPath: _localPathController.text.trim(),
+        onProgress: (fileList, totalFiles, processedFiles, currentFileName) {
+          if (!mounted) return;
+          setState(() {
+            _fileList.clear();
+            _fileList.addAll(fileList); // 更新文件列表
+            _totalFiles = totalFiles;
+            _processedFiles = processedFiles;
+            _currentFileName = currentFileName;
+          });
+        },
+        onLog: _addLog, // 日志回调
+        onTokenExpired: () { // 令牌过期回调
+          if (!mounted) return;
+          _addLog('认证令牌已过期，需要重新登录');
+          widget.onAuthStatusChanged(null, null, false); // 清除认证状态
+          _showSnackBar('密码已更改，请重新登录');
+        },
+      );
+      
+      if (result) {
+        _addLog('同步完成！共同步 $_totalFiles 个文件');
+        _showSnackBar('同步完成！共同步 $_totalFiles 个文件');
+      } else {
+        _addLog('部分文件同步失败');
+        _showSnackBar('部分文件同步失败，请查看日志');
+      }
+    } catch (e) {
+      _addLog('同步出错: $e');
+      
+      // 更详细的错误处理
+      if (e.toString().contains('密码已更改') || e is TokenExpiredException) {
+        _showSnackBar('密码已更改，请重新登录');
+        // 自动触发重新登录
+        widget.onAuthStatusChanged(null, null, false);
+      } else if (e.toString().contains('认证令牌')) {
+        _showSnackBar('认证失败，请重新登录');
+        // 自动触发重新登录
+        widget.onAuthStatusChanged(null, null, false);
+      } else {
+        _showSnackBar('同步出错: $e');
+      }
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isSyncing = false; // 结束同步
+      });
+    }
+  }
+
+  // 添加日志
   void _addLog(String message) {
     if (!mounted) return;
-    final timestamp = DateTime.now().toString().split('.').first;
+    final timestamp = DateTime.now().toString().split('.').first; // 时间戳
     setState(() {
-      _syncLogs.add('[$timestamp] $message');
+      _syncLogs.add('[$timestamp] $message'); // 添加带时间戳的日志
     });
   }
 
+  // 显示提示消息
   void _showSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -337,19 +350,19 @@ Future<void> _startSync() async {
         title: const Text('文件同步'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          if (!_hasStoragePermission)
+          if (!_hasStoragePermission) // 没有权限时显示警告图标
             IconButton(
               icon: const Icon(Icons.warning_amber),
               onPressed: _requestPermissions,
               tooltip: '申请存储权限',
               color: Colors.orange,
             ),
-          if (_syncLogs.isNotEmpty)
+          if (_syncLogs.isNotEmpty) // 有日志时显示历史图标
             IconButton(
               icon: const Icon(Icons.history),
               onPressed: () {
                 setState(() {
-                  _showLogs = !_showLogs;
+                  _showLogs = !_showLogs; // 切换日志显示状态
                 });
               },
               tooltip: _showLogs ? '隐藏日志' : '显示日志',
@@ -401,7 +414,7 @@ Future<void> _startSync() async {
               ),
             ),
             const SizedBox(height: 16),
-            if (!_hasStoragePermission) ...[
+            if (!_hasStoragePermission) ...[ // 没有权限时显示警告
               _buildPermissionWarning(),
               const SizedBox(height: 16),
             ],
@@ -419,7 +432,7 @@ Future<void> _startSync() async {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.green[100],
+                                  color: Colors.green[100], // 绿色标签
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -433,24 +446,24 @@ Future<void> _startSync() async {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          _buildInputField(
+                          _buildInputField( // 源路径输入字段
                             controller: _sourcePathController,
                             label: 'Openlist 源路径 *',
                             hintText: '/folder/example',
                             icon: Icons.folder_open,
                           ),
                           const SizedBox(height: 16),
-                          _buildLocalPathField(),
+                          _buildLocalPathField(), // 本地路径字段
                           const SizedBox(height: 24),
-                          if (_isSyncing && _totalFiles > 0) ...[
+                          if (_isSyncing && _totalFiles > 0) ...[ // 同步中显示进度
                             _buildProgressIndicator(),
                             const SizedBox(height: 16),
                           ],
-                          if (_fileList.isNotEmpty && !_isSyncing) ...[
+                          if (_fileList.isNotEmpty && !_isSyncing) ...[ // 同步完成显示文件列表
                             _buildFileListPreview(),
                             const SizedBox(height: 16),
                           ],
-                          if (_syncLogs.isNotEmpty && _showLogs) ...[
+                          if (_syncLogs.isNotEmpty && _showLogs) ...[ // 显示日志
                             _buildSyncLogs(),
                             const SizedBox(height: 16),
                           ],
@@ -461,17 +474,17 @@ Future<void> _startSync() async {
                 ],
               ),
             ),
-            _buildSyncButton(),
+            _buildSyncButton(), // 同步按钮
           ],
         ),
       ),
     );
   }
 
-  // ... 其余构建方法保持不变 (为节省篇幅省略)
+  // 构建权限警告组件
   Widget _buildPermissionWarning() {
     return Card(
-      color: Colors.orange[50],
+      color: Colors.orange[50], // 橙色警告背景
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -500,7 +513,7 @@ Future<void> _startSync() async {
                 ],
               ),
             ),
-            FilledButton.tonal(
+            FilledButton.tonal( // 授权按钮
               onPressed: _requestPermissions,
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.orange,
@@ -514,6 +527,7 @@ Future<void> _startSync() async {
     );
   }
 
+  // 构建通用输入字段
   Widget _buildInputField({
     required TextEditingController controller,
     required String label,
@@ -546,6 +560,7 @@ Future<void> _startSync() async {
     );
   }
 
+  // 构建本地路径字段
   Widget _buildLocalPathField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,7 +584,7 @@ Future<void> _startSync() async {
                   border: OutlineInputBorder(),
                   filled: true,
                 ),
-                readOnly: true,
+                readOnly: true, // 只读，通过按钮选择
               ),
             ),
             const SizedBox(width: 8),
@@ -596,6 +611,7 @@ Future<void> _startSync() async {
     );
   }
 
+  // 构建进度指示器
   Widget _buildProgressIndicator() {
     return Card(
       child: Padding(
@@ -608,11 +624,11 @@ Future<void> _startSync() async {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            LinearProgressIndicator(
+            LinearProgressIndicator( // 线性进度条
               value: _totalFiles > 0 ? _processedFiles / _totalFiles : 0,
               backgroundColor: Colors.grey[300],
               valueColor: AlwaysStoppedAnimation<Color>(
-                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.primary, // 使用主题色
               ),
             ),
             const SizedBox(height: 8),
@@ -620,11 +636,11 @@ Future<void> _startSync() async {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '$_processedFiles / $_totalFiles 个文件',
+                  '$_processedFiles / $_totalFiles 个文件', // 文件计数
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 Text(
-                  '${((_processedFiles / _totalFiles) * 100).toStringAsFixed(1)}%',
+                  '${((_processedFiles / _totalFiles) * 100).toStringAsFixed(1)}%', // 百分比
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -632,12 +648,12 @@ Future<void> _startSync() async {
             if (_currentFileName.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
-                '正在处理: $_currentFileName',
+                '正在处理: $_currentFileName', // 当前文件名
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontStyle: FontStyle.italic,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                overflow: TextOverflow.ellipsis,
+                overflow: TextOverflow.ellipsis, // 溢出省略
               ),
             ],
           ],
@@ -646,6 +662,7 @@ Future<void> _startSync() async {
     );
   }
 
+  // 构建文件列表预览
   Widget _buildFileListPreview() {
     return Card(
       child: Padding(
@@ -659,24 +676,24 @@ Future<void> _startSync() async {
             ),
             const SizedBox(height: 8),
             Text(
-              '共 ${_fileList.length} 个文件',
+              '共 ${_fileList.length} 个文件', // 文件总数
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            if (_fileList.length > 5) ...[
+            if (_fileList.length > 5) ...[ // 文件较多时显示前5个
               const SizedBox(height: 8),
               const Text('前5个文件:'),
               ..._fileList.take(5).map((file) => Text(
-                '  • ${file.fsObject.name}',
+                '  • ${file.fsObject.name}', // 文件名
                 style: Theme.of(context).textTheme.bodySmall,
                 overflow: TextOverflow.ellipsis,
               )).toList(),
               if (_fileList.length > 5) ...[
                 Text(
-                  '  ... 还有 ${_fileList.length - 5} 个文件',
+                  '  ... 还有 ${_fileList.length - 5} 个文件', // 剩余文件数
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
-            ] else if (_fileList.isNotEmpty) ...[
+            ] else if (_fileList.isNotEmpty) ...[ // 文件较少时显示全部
               const SizedBox(height: 8),
               ..._fileList.map((file) => Text(
                 '  • ${file.fsObject.name}',
@@ -690,6 +707,7 @@ Future<void> _startSync() async {
     );
   }
 
+  // 构建同步日志
   Widget _buildSyncLogs() {
     return Card(
       child: Padding(
@@ -703,12 +721,12 @@ Future<void> _startSync() async {
                   '同步日志',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                const Spacer(),
+                const Spacer(), // 占位空间
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () {
                     setState(() {
-                      _showLogs = false;
+                      _showLogs = false; // 隐藏日志
                     });
                   },
                   tooltip: '隐藏日志',
@@ -717,7 +735,7 @@ Future<void> _startSync() async {
             ),
             const SizedBox(height: 8),
             Container(
-              height: 200,
+              height: 200, // 固定高度
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey.shade300),
                 borderRadius: BorderRadius.circular(8),
@@ -729,7 +747,7 @@ Future<void> _startSync() async {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Text(
                       _syncLogs[index],
-                      style: const TextStyle(fontSize: 12, fontFamily: 'Monospace'),
+                      style: const TextStyle(fontSize: 12, fontFamily: 'Monospace'), // 等宽字体
                     ),
                   );
                 },
@@ -741,11 +759,12 @@ Future<void> _startSync() async {
     );
   }
 
+  // 构建同步按钮
   Widget _buildSyncButton() {
     return SizedBox(
-      width: double.infinity,
+      width: double.infinity, // 宽度填满
       child: FilledButton(
-        onPressed: (_isSyncing || !widget.isLoggedIn || !_hasStoragePermission) ? null : _startSync,
+        onPressed: (_isSyncing || !widget.isLoggedIn || !_hasStoragePermission) ? null : _startSync, // 条件禁用
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
@@ -753,13 +772,13 @@ Future<void> _startSync() async {
           ),
         ),
         child: _isSyncing
-            ? const Row(
+            ? const Row( // 同步中状态
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(
+                    child: CircularProgressIndicator( // 加载指示器
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
@@ -768,12 +787,12 @@ Future<void> _startSync() async {
                   Text('同步中...'),
                 ],
               )
-            : Row(
+            : Row( // 正常状态
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.sync),
                   const SizedBox(width: 8),
-                  Text(!_hasStoragePermission ? '需要权限' : (widget.isLoggedIn ? '开始同步' : '请先登录')),
+                  Text(!_hasStoragePermission ? '需要权限' : (widget.isLoggedIn ? '开始同步' : '请先登录')), // 动态文本
                 ],
               ),
       ),
@@ -782,7 +801,7 @@ Future<void> _startSync() async {
 
   @override
   void dispose() {
-    _sourcePathController.dispose();
+    _sourcePathController.dispose(); // 销毁控制器
     _localPathController.dispose();
     super.dispose();
   }

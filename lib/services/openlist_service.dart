@@ -1,27 +1,29 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:http/http.dart' as http;
-import 'package:path/path.dart' as path;
+import 'dart:convert'; // JSON编解码
+import 'dart:io'; // 文件IO操作
+import 'package:http/http.dart' as http; // HTTP客户端
+import 'package:path/path.dart' as path; // 路径处理
 
+// Openlist服务类，负责与Openlist服务器通信和文件同步
 class OpenlistService {
+  // 同步文件夹的主要方法
   Future<bool> syncFolder({
-    required String address,
-    required String? authToken,
-    required String sourcePath,
-    required String localPath,
-    required Function(List<SyncFile>, int, int, String) onProgress,
-    required Function(String) onLog,
-    required Function() onTokenExpired, // 新增：令牌过期回调
+    required String address, // 服务器地址
+    required String? authToken, // 认证令牌
+    required String sourcePath, // 源路径（服务器端）
+    required String localPath, // 本地路径
+    required Function(List<SyncFile>, int, int, String) onProgress, // 进度回调
+    required Function(String) onLog, // 日志回调
+    required Function() onTokenExpired, // 令牌过期回调
   }) async {
-    final List<SyncFile> fileList = [];
-    int totalFiles = 0;
-    int processedFiles = 0;
-    String currentFileName = '';
+    final List<SyncFile> fileList = []; // 文件列表
+    int totalFiles = 0; // 总文件数
+    int processedFiles = 0; // 已处理文件数
+    String currentFileName = ''; // 当前正在处理的文件名
 
     try {
-      // 验证源路径
+      // 验证源路径安全性
       if (sourcePath.contains('..') || sourcePath.isEmpty) {
-        throw Exception('源路径无效');
+        throw Exception('源路径无效'); // 防止路径遍历攻击
       }
 
       // 验证本地路径
@@ -29,7 +31,7 @@ class OpenlistService {
         throw Exception('本地路径不能为空');
       }
 
-      // 获取目录信息 - 使用用户输入的路径
+      // 获取目录信息
       onLog('正在获取目录信息...');
       final dirInfo = await _getDirectoryInfo(address, authToken, sourcePath, onTokenExpired);
       if (dirInfo == null || !dirInfo.isDir) {
@@ -40,12 +42,12 @@ class OpenlistService {
       onLog('正在扫描目录结构...');
       await _getAllFilesRecursive(address, authToken, sourcePath, sourcePath, fileList, onTokenExpired);
 
-      totalFiles = fileList.length;
-      onProgress(fileList, totalFiles, processedFiles, currentFileName);
+      totalFiles = fileList.length; // 设置总文件数
+      onProgress(fileList, totalFiles, processedFiles, currentFileName); // 更新进度
 
       if (fileList.isEmpty) {
         onLog('目录中没有文件可同步');
-        return true;
+        return true; // 空目录也算同步成功
       }
 
       onLog('发现 $totalFiles 个文件，开始下载...');
@@ -53,12 +55,12 @@ class OpenlistService {
       // 创建本地目录
       final localDir = Directory(localPath);
       if (!await localDir.exists()) {
-        await localDir.create(recursive: true);
+        await localDir.create(recursive: true); // 递归创建目录
       }
 
       // 下载文件
-      int successCount = 0;
-      int failCount = 0;
+      int successCount = 0; // 成功计数
+      int failCount = 0; // 失败计数
       
       for (int i = 0; i < fileList.length; i++) {
         final file = fileList[i];
@@ -72,6 +74,7 @@ class OpenlistService {
           onLog('警告: 文件没有签名信息');
         }
         
+        // 下载单个文件
         final success = await _downloadFile(
           address: address,
           authToken: authToken,
@@ -88,18 +91,19 @@ class OpenlistService {
           onLog('✗ 下载失败: $currentFileName');
         }
         
-        processedFiles = i + 1;
-        onProgress(fileList, totalFiles, processedFiles, currentFileName);
+        processedFiles = i + 1; // 更新已处理文件数
+        onProgress(fileList, totalFiles, processedFiles, currentFileName); // 更新进度
       }
 
       onLog('同步完成: $successCount 成功, $failCount 失败');
-      return failCount == 0;
+      return failCount == 0; // 返回是否全部成功
     } catch (e) {
       onLog('同步失败: $e');
-      throw e;
+      throw e; // 重新抛出异常
     }
   }
 
+  // 获取目录信息
   Future<FsObject?> _getDirectoryInfo(
     String address, 
     String? authToken, 
@@ -107,26 +111,26 @@ class OpenlistService {
     Function() onTokenExpired,
   ) async {
     try {
-      final url = Uri.parse('http://$address/api/fs/get');
+      final url = Uri.parse('http://$address/api/fs/get'); // 构建API URL
       final headers = {
-        'Content-Type': 'application/json',
-        if (authToken != null) 'Authorization': authToken,
+        'Content-Type': 'application/json', // JSON内容类型
+        if (authToken != null) 'Authorization': authToken, // 条件添加认证头
       };
       
       final response = await http.post(
         url,
         headers: headers,
-        body: jsonEncode({'path': dirPath}),
+        body: jsonEncode({'path': dirPath}), // 编码请求体
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(response.body); // 解码响应体
         if (data['code'] == 200) {
-          return FsObject.fromJson(data['data']);
+          return FsObject.fromJson(data['data']); // 成功返回目录对象
         } else {
           // 检查是否是密码更改错误
           if (data['code'] == 401 && data['message'] == 'Password has been changed, login please') {
-            onTokenExpired();
+            onTokenExpired(); // 触发令牌过期回调
             throw TokenExpiredException('密码已更改，请重新登录');
           }
           throw Exception('API错误: ${data['message']}');
@@ -136,12 +140,13 @@ class OpenlistService {
       }
     } catch (e) {
       if (e is TokenExpiredException) {
-        rethrow;
+        rethrow; // 重新抛出令牌过期异常
       }
       throw Exception('获取目录信息失败: $e');
     }
   }
 
+  // 递归获取所有文件
   Future<void> _getAllFilesRecursive(
     String address,
     String? authToken,
@@ -157,8 +162,10 @@ class OpenlistService {
         final newVirtualPath = _buildVirtualPath(currentVirtualPath, item.name);
         
         if (item.isDir) {
+          // 如果是目录，递归处理
           await _getAllFilesRecursive(address, authToken, newVirtualPath, basePath, fileList, onTokenExpired);
         } else {
+          // 如果是文件，添加到文件列表
           final relativePath = _getRelativePath(newVirtualPath, basePath);
           
           // 为每个文件预先获取详细信息（包含sign）
@@ -178,7 +185,7 @@ class OpenlistService {
               thumb: fsObject.thumb,
               type: fsObject.type,
             ),
-            relativePath: relativePath,
+            relativePath: relativePath, // 相对路径
           ));
         }
       }
@@ -191,6 +198,7 @@ class OpenlistService {
     }
   }
 
+  // 列出目录内容
   Future<List<FsObject>> _listDirectory(
     String address, 
     String? authToken, 
@@ -209,9 +217,9 @@ class OpenlistService {
         headers: headers,
         body: jsonEncode({
           'path': dirPath,
-          'page': 1,
-          'per_page': 1000,
-          'refresh': false,
+          'page': 1, // 页码
+          'per_page': 1000, // 每页数量
+          'refresh': false, // 不强制刷新
         }),
       );
 
@@ -219,7 +227,7 @@ class OpenlistService {
         final data = jsonDecode(response.body);
         if (data['code'] == 200) {
           final List<dynamic> itemsData = data['data']['content'] ?? [];
-          return itemsData.map((item) => FsObject.fromJson(item)).toList();
+          return itemsData.map((item) => FsObject.fromJson(item)).toList(); // 转换为FsObject列表
         } else {
           // 检查是否是密码更改错误
           if (data['code'] == 401 && data['message'] == 'Password has been changed, login please') {
@@ -239,7 +247,7 @@ class OpenlistService {
     }
   }
 
-  // 新增：获取单个文件信息的方法
+  // 获取单个文件信息的方法
   Future<FsObject?> _getFileInfo(
     String address, 
     String? authToken, 
@@ -270,7 +278,7 @@ class OpenlistService {
             throw TokenExpiredException('密码已更改，请重新登录');
           }
           print('获取文件信息API错误: ${data['message']}');
-          return null;
+          return null; // 返回null而不是抛出异常
         }
       } else {
         print('获取文件信息HTTP错误: ${response.statusCode}');
@@ -285,12 +293,13 @@ class OpenlistService {
     }
   }
 
+  // 下载单个文件
   Future<bool> _downloadFile({
     required String address,
     required String? authToken,
     required SyncFile syncFile,
     required String localPath,
-    required Function() onTokenExpired, // 新增：令牌过期回调
+    required Function() onTokenExpired,
   }) async {
     try {
       final file = syncFile.fsObject;
@@ -301,11 +310,6 @@ class OpenlistService {
         print('无法获取文件信息: ${file.name}');
         return false;
       }
-
-      // 关键修改：正确构建下载URL
-      // 根据您提供的分析链接，正确的格式应该是：
-      // http://地址/d/路径?sign=xxx
-      // 其中路径应该是相对于存储的路径，而不是完整的文件系统路径
       
       // 移除开头的斜杠（如果存在）
       String downloadPath = file.path;
@@ -321,7 +325,7 @@ class OpenlistService {
       
       final Map<String, String> queryParams = {};
       if (fileInfo.sign != null && fileInfo.sign!.isNotEmpty) {
-        queryParams['sign'] = fileInfo.sign!;
+        queryParams['sign'] = fileInfo.sign!; // 添加签名参数
       }
 
       final headers = {
@@ -348,7 +352,7 @@ class OpenlistService {
 
         // 写入文件
         final localFile = File(localFilePath);
-        await localFile.writeAsBytes(response.bodyBytes);
+        await localFile.writeAsBytes(response.bodyBytes); // 写入二进制数据
         print('下载完成: ${file.name} -> $localFilePath');
         return true;
       } else {
@@ -380,7 +384,7 @@ class OpenlistService {
     }
   }
 
-  // 新增：路径编码方法，正确处理空格和特殊字符但保留斜杠
+  // 路径编码方法，正确处理空格和特殊字符但保留斜杠
   String _encodePath(String filePath) {
     // 将路径分割成各部分
     final parts = filePath.split('/');
@@ -392,21 +396,23 @@ class OpenlistService {
     return encodedParts.join('/');
   }
 
+  // 构建虚拟路径
   String _buildVirtualPath(String basePath, String itemName) {
     String normalizePath(String p) {
-      return p.replaceAll(r'\', '/');
+      return p.replaceAll(r'\', '/'); // 统一使用正斜杠
     }
     
     final normalizedBasePath = normalizePath(basePath);
     
     String base = normalizedBasePath;
     if (base.endsWith('/')) {
-      base = base.substring(0, base.length - 1);
+      base = base.substring(0, base.length - 1); // 移除末尾斜杠
     }
     
-    return '$base/$itemName';
+    return '$base/$itemName'; // 拼接路径
   }
 
+  // 获取相对路径
   String _getRelativePath(String fullPath, String basePath) {
     String normalizePath(String p) {
       return p.replaceAll(r'\', '/');
@@ -417,49 +423,52 @@ class OpenlistService {
     
     String base = normalizedBasePath;
     if (!base.endsWith('/')) {
-      base += '/';
+      base += '/'; // 确保basePath以斜杠结尾
     }
     
     if (normalizedFullPath.startsWith(base)) {
       String relativePath = normalizedFullPath.substring(base.length);
-      return _cleanPath(relativePath);
+      return _cleanPath(relativePath); // 清理路径
     }
     
-    String fileName = path.basename(normalizedFullPath);
-    return _generateSafeFileName(fileName);
+    String fileName = path.basename(normalizedFullPath); // 获取文件名
+    return _generateSafeFileName(fileName); // 生成安全文件名
   }
 
+  // 清理路径
   String _cleanPath(String filePath) {
     if (filePath.contains(':')) {
       List<String> parts = filePath.split('/');
       for (int i = parts.length - 1; i >= 0; i--) {
         if (parts[i].contains(':')) {
-          return parts.sublist(i + 1).join('/');
+          return parts.sublist(i + 1).join('/'); // 移除包含冒号的部分
         }
       }
     }
     return filePath;
   }
 
+  // 生成安全文件名
   String _generateSafeFileName(String originalName) {
     return originalName
-        .replaceAll(RegExp(r'[<>:"|?*]'), '_')
+        .replaceAll(RegExp(r'[<>:"|?*]'), '_') // 替换非法字符
         .replaceAll(RegExp(r'[\\/]'), '_')
         .replaceAll(':', '_');
   }
 }
 
+// 文件系统对象类
 class FsObject {
-  final String? id;
-  final String path;
-  final String name;
-  final int size;
-  final bool isDir;
-  final String? modified;
-  final String? created;
-  final String? sign;
-  final String? thumb;
-  final int? type;
+  final String? id; // 文件ID
+  final String path; // 文件路径
+  final String name; // 文件名
+  final int size; // 文件大小
+  final bool isDir; // 是否为目录
+  final String? modified; // 修改时间
+  final String? created; // 创建时间
+  final String? sign; // 文件签名（用于下载验证）
+  final String? thumb; // 缩略图
+  final int? type; // 文件类型
 
   FsObject({
     this.id,
@@ -474,10 +483,11 @@ class FsObject {
     this.type,
   });
 
+  // 从JSON创建FsObject的工厂方法
   factory FsObject.fromJson(Map<String, dynamic> json) {
     return FsObject(
       id: json['id'],
-      path: json['path'] ?? '',
+      path: json['path'] ?? '', // 提供默认值
       name: json['name'] ?? '',
       size: json['size'] ?? 0,
       isDir: json['is_dir'] ?? false,
@@ -490,9 +500,10 @@ class FsObject {
   }
 }
 
+// 同步文件类，包含文件对象和相对路径
 class SyncFile {
-  final FsObject fsObject;
-  final String relativePath;
+  final FsObject fsObject; // 文件系统对象
+  final String relativePath; // 相对路径
 
   SyncFile({
     required this.fsObject,
@@ -500,7 +511,7 @@ class SyncFile {
   });
 }
 
-// 新增：令牌过期异常类
+// 令牌过期异常类
 class TokenExpiredException implements Exception {
   final String message;
   
