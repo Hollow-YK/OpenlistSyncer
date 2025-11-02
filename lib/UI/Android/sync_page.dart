@@ -220,74 +220,96 @@ class _SyncPageState extends State<SyncPage> {
     }
   }
 
-  Future<void> _startSync() async {
-    if (widget.addressController.text.isEmpty ||
-        _sourcePathController.text.isEmpty ||
-        _localPathController.text.isEmpty) {
-      _showSnackBar('请填写所有必填字段');
-      return;
-    }
+Future<void> _startSync() async {
+  if (widget.addressController.text.isEmpty ||
+      _sourcePathController.text.isEmpty ||
+      _localPathController.text.isEmpty) {
+    _showSnackBar('请填写所有必填字段');
+    return;
+  }
 
-    if (!widget.isLoggedIn) {
-      _showSnackBar('请先登录Openlist');
-      return;
-    }
+  if (!widget.isLoggedIn) {
+    _showSnackBar('请先登录Openlist');
+    return;
+  }
 
+  if (!_hasStoragePermission) {
+    await _requestPermissions();
     if (!_hasStoragePermission) {
-      await _requestPermissions();
-      if (!_hasStoragePermission) {
-        _showSnackBar('需要存储权限才能同步文件');
-        return;
-      }
-    }
-
-    if (!mounted) return;
-    setState(() {
-      _isSyncing = true;
-      _fileList.clear();
-      _totalFiles = 0;
-      _processedFiles = 0;
-      _currentFileName = '';
-      _syncLogs.clear();
-      _addLog('开始同步文件...');
-    });
-
-    try {
-      final result = await _openlistService.syncFolder(
-        address: widget.addressController.text.trim(),
-        authToken: widget.authToken,
-        sourcePath: _sourcePathController.text.trim(),
-        localPath: _localPathController.text.trim(),
-        onProgress: (fileList, totalFiles, processedFiles, currentFileName) {
-          if (!mounted) return;
-          setState(() {
-            _fileList.clear();
-            _fileList.addAll(fileList);
-            _totalFiles = totalFiles;
-            _processedFiles = processedFiles;
-            _currentFileName = currentFileName;
-          });
-        },
-        onLog: _addLog,
-      );
-      
-      if (result) {
-        _addLog('同步完成！共同步 $_totalFiles 个文件');
-        _showSnackBar('同步完成！共同步 $_totalFiles 个文件');
-      } else {
-        _addLog('同步失败，请检查设置');
-        _showSnackBar('同步失败，请检查设置');
-      }
-    } catch (e) {
-      _addLog('同步出错: $e');
-      _showSnackBar('同步出错: $e');
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isSyncing = false;
-      });
+      _showSnackBar('需要存储权限才能同步文件');
+      return;
     }
   }
+
+  if (!mounted) return;
+  setState(() {
+    _isSyncing = true;
+    _fileList.clear();
+    _totalFiles = 0;
+    _processedFiles = 0;
+    _currentFileName = '';
+    _syncLogs.clear();
+    _addLog('开始同步文件...');
+    _addLog('服务器地址: ${widget.addressController.text.trim()}');
+    _addLog('源路径: ${_sourcePathController.text.trim()}');
+    _addLog('本地路径: ${_localPathController.text.trim()}');
+    _addLog('认证令牌: ${widget.authToken != null ? "已设置" : "未设置"}');
+  });
+
+  try {
+    final result = await _openlistService.syncFolder(
+      address: widget.addressController.text.trim(),
+      authToken: widget.authToken,
+      sourcePath: _sourcePathController.text.trim(),
+      localPath: _localPathController.text.trim(),
+      onProgress: (fileList, totalFiles, processedFiles, currentFileName) {
+        if (!mounted) return;
+        setState(() {
+          _fileList.clear();
+          _fileList.addAll(fileList);
+          _totalFiles = totalFiles;
+          _processedFiles = processedFiles;
+          _currentFileName = currentFileName;
+        });
+      },
+      onLog: _addLog,
+      onTokenExpired: () { // 新增：令牌过期回调
+        if (!mounted) return;
+        _addLog('认证令牌已过期，需要重新登录');
+        widget.onAuthStatusChanged(null, null, false);
+        _showSnackBar('密码已更改，请重新登录');
+      },
+    );
+    
+    if (result) {
+      _addLog('同步完成！共同步 $_totalFiles 个文件');
+      _showSnackBar('同步完成！共同步 $_totalFiles 个文件');
+    } else {
+      _addLog('部分文件同步失败');
+      _showSnackBar('部分文件同步失败，请查看日志');
+    }
+  } catch (e) {
+    _addLog('同步出错: $e');
+    
+    // 更详细的错误处理
+    if (e.toString().contains('密码已更改') || e is TokenExpiredException) {
+      _showSnackBar('密码已更改，请重新登录');
+      // 自动触发重新登录
+      widget.onAuthStatusChanged(null, null, false);
+    } else if (e.toString().contains('认证令牌')) {
+      _showSnackBar('认证失败，请重新登录');
+      // 自动触发重新登录
+      widget.onAuthStatusChanged(null, null, false);
+    } else {
+      _showSnackBar('同步出错: $e');
+    }
+  } finally {
+    if (!mounted) return;
+    setState(() {
+      _isSyncing = false;
+    });
+  }
+}
 
   void _addLog(String message) {
     if (!mounted) return;
