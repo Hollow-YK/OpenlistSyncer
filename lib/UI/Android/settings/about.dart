@@ -63,7 +63,7 @@ class _AboutPageState extends State<AboutPage> {
             ),
             const SizedBox(height: 4),
             Text(
-              '版本 0.0.2',
+              '版本 0.0.2 - Beta 1',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
