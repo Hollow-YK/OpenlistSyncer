@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'settings/about.dart'; // 导入关于页面
+import 'settings/theme_page.dart'; // 导入主题设置页面
 
 class SettingsPage extends StatefulWidget {
   final TextEditingController addressController;
@@ -86,8 +87,78 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
 
           // 设置选项列表
+          Padding(
+            padding: const EdgeInsets.only(left: 16, top: 16),
+            child: const Text(
+              '应用设置',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.left,
+            ),
+          ),
           Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
+            margin: const EdgeInsets.all(9),
+            child: Column(
+              children: [
+                // Openlist选项
+                _buildSettingsItem(
+                  icon: Icons.person,
+                  title: 'Openlist设置',
+                  subtitle: '记住Openlist地址、账号等',
+                  onTap: () {
+                    // 跳转到Openlist选项
+                    _showSnackBar('还没写完，下次一定');
+                  },
+                  trailing: const Icon(Icons.chevron_right),
+                ),
+                // 同步选项
+                _buildSettingsItem(
+                  icon: Icons.sync_outlined,
+                  title: '同步',
+                  subtitle: '记住路径等',
+                  onTap: () {
+                    // 跳转到同步设置
+                    _showSnackBar('还没写完，下次一定');
+                  },
+                  trailing: const Icon(Icons.chevron_right),
+                ),
+                // 主题选项
+                _buildSettingsItem(
+                  icon: Icons.palette_outlined,
+                  title: '主题',
+                  //subtitle: '切换浅色与深色主题',
+                  subtitle: '还没写完，下次一定',
+                  onTap: () {
+                    // 跳转到主题设置
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ThemePage(),
+                      ),
+                    );
+                  },
+                  trailing: const Icon(Icons.chevron_right),
+                ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.only(left: 16, top: 16),
+            child: const Text(
+              '关于本项目',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.left,
+            ),
+          ),
+
+          Card(
+            margin: const EdgeInsets.all(9),
             child: Column(
               children: [
                 // GitHub选项
