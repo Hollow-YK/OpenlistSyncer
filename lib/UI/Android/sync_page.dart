@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart'; // 文件选择器
-import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart'; // 权限处理
 import 'package:path_provider/path_provider.dart'; // 路径提供器
 import '../../services/openlist_service.dart'; // 导入Openlist服务
@@ -359,7 +358,7 @@ class _SyncPageState extends State<SyncPage> {
             ),
           if (_syncLogs.isNotEmpty) // 有日志时显示历史图标
             IconButton(
-              icon: const Icon(Icons.history),
+              icon: const Icon(Icons.article_outlined),
               onPressed: () {
                 setState(() {
                   _showLogs = !_showLogs; // 切换日志显示状态
@@ -454,17 +453,73 @@ class _SyncPageState extends State<SyncPage> {
                           ),
                           const SizedBox(height: 16),
                           _buildLocalPathField(), // 本地路径字段
+                        ],
+                      ),
+                    ),
+                  ),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.green[100], // 绿色标签
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '同步信息',
+                                  style: TextStyle(
+                                    color: Colors.green[800],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 24),
+                          if (!_fileList.isNotEmpty && !_isSyncing) ...[ // 同步开始前显示提示
+                            const Text(
+                              '请先开始同步',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          if (_isSyncing) ...[ // 同步中显示提示
+                            if(_totalFiles > 0) ...[
+                              const Text(
+                                '正在同步...',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ] else ...[
+                              const Text(
+                                '正在准备同步...',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                          ],
+                          if (_fileList.isNotEmpty && !_isSyncing) ...[ // 同步完成显示提示
+                            const Text(
+                              '同步完成',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
                           if (_isSyncing && _totalFiles > 0) ...[ // 同步中显示进度
                             _buildProgressIndicator(),
                             const SizedBox(height: 16),
                           ],
-                          if (_fileList.isNotEmpty && !_isSyncing) ...[ // 同步完成显示文件列表
-                            _buildFileListPreview(),
-                            const SizedBox(height: 16),
-                          ],
                           if (_syncLogs.isNotEmpty && _showLogs) ...[ // 显示日志
                             _buildSyncLogs(),
+                            const SizedBox(height: 16),
+                          ],
+                          if (_fileList.isNotEmpty && !_isSyncing) ...[ // 同步完成显示文件列表
+                            _buildFileListPreview(),
                             const SizedBox(height: 16),
                           ],
                         ],
@@ -670,18 +725,23 @@ class _SyncPageState extends State<SyncPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '发现的文件',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '同步的文件',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
               '共 ${_fileList.length} 个文件', // 文件总数
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            if (_fileList.length > 5) ...[ // 文件较多时显示前5个
+            if (_fileList.length > 50) ...[ // 文件较多时显示前5个
               const SizedBox(height: 8),
-              const Text('前5个文件:'),
+              const Text('包含:'),
               ..._fileList.take(5).map((file) => Text(
                 '  • ${file.fsObject.name}', // 文件名
                 style: Theme.of(context).textTheme.bodySmall,
@@ -689,7 +749,7 @@ class _SyncPageState extends State<SyncPage> {
               )).toList(),
               if (_fileList.length > 5) ...[
                 Text(
-                  '  ... 还有 ${_fileList.length - 5} 个文件', // 剩余文件数
+                  '  ... 与其它 ${_fileList.length - 50} 个文件', // 剩余文件数
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
