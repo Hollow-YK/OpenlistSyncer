@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'settings/about.dart'; // 导入关于页面
 
 class SettingsPage extends StatefulWidget {
@@ -89,6 +90,25 @@ class _SettingsPageState extends State<SettingsPage> {
             margin: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               children: [
+                // GitHub选项
+                _buildSettingsItem(
+                  icon: Icons.code,
+                  title: 'GitHub',
+                  subtitle: '前往本项目的GitHub页面',
+                  onTap: () async{
+                    // 跳转到关于页面
+                    try {
+                      const githubUrl = 'https://github.com/Hollow-YK/OpenlistSyncer';
+                      await launchUrl(
+                        Uri.parse(githubUrl),
+                        mode: LaunchMode.externalApplication, // 在外部浏览器中打开
+                      );
+                    } catch (e) {
+                      _showSnackBar('打开GitHub页面时出错: $e');
+                    }
+                  },
+                  trailing: const Icon(Icons.chevron_right),
+                ),
                 // 关于选项
                 _buildSettingsItem(
                   icon: Icons.info_outline,
