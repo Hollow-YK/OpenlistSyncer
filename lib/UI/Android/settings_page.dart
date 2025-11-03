@@ -128,8 +128,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 _buildSettingsItem(
                   icon: Icons.palette_outlined,
                   title: '主题',
-                  //subtitle: '切换浅色与深色主题',
-                  subtitle: '还没写完，下次一定',
+                  subtitle: '切换主题明暗与配色',
                   onTap: () {
                     // 跳转到主题设置
                     Navigator.push(
