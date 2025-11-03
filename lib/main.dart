@@ -126,6 +126,10 @@ class _MainAppState extends State<MainApp> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
+        selectedItemColor: app_theme.AppTheme.seedColor, // 选中项使用主题色
+        unselectedItemColor: Colors.grey, // 未选中项使用灰色
+        backgroundColor: Theme.of(context).colorScheme.surface, // 背景色使用反向主色
+        type: BottomNavigationBarType.fixed, // 固定类型，确保所有项都显示标签
         items: [
           BottomNavigationBarItem(
             icon: Badge(
