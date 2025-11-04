@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../theme.dart' as app_theme; // 导入主题配置，使用别名避免命名冲突
+import '../../../services/settings_manager.dart';
+import '../../../services/theme_manager.dart'; // 导入 ThemeManager 和 ColorOption
 
 /// 主题设置页面 - 允许用户自定义应用的主题和颜色
 class ThemePage extends StatefulWidget {
@@ -11,6 +12,8 @@ class ThemePage extends StatefulWidget {
 
 /// 主题设置页面的状态类
 class _ThemePageState extends State<ThemePage> {
+  final SettingsManager _settingsManager = SettingsManager();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -112,9 +115,9 @@ class _ThemePageState extends State<ThemePage> {
             mainAxisSpacing: 16, // 垂直间距
             childAspectRatio: 0.7, // 宽高比，确保布局美观
           ),
-          itemCount: app_theme.AppTheme.predefinedColors.length,
+          itemCount: _settingsManager.themeManager.predefinedColors.length,
           itemBuilder: (context, index) {
-            final colorOption = app_theme.AppTheme.predefinedColors[index];
+            final colorOption = _settingsManager.themeManager.predefinedColors[index];
             return _buildColorOption(colorOption);
           },
         );
@@ -132,14 +135,14 @@ class _ThemePageState extends State<ThemePage> {
     required String value,
   }) {
     // 检查当前选项是否被选中
-    final isSelected = app_theme.AppTheme.settingsManager.themeMode == value;
+    final isSelected = _settingsManager.themeMode == value;
     
     return ListTile(
       leading: Icon(
         icon,
         color: isSelected 
             ? Theme.of(context).colorScheme.primary  // 选中时使用主题色
-            : Theme.of(context).colorScheme.onSurface.withOpacity(0.6), // 未选中时半透明
+            : Theme.of(context).colorScheme.onSurface.withOpacity(0.6), // 未选中时使用新的不透明度方法
       ),
       title: Text(
         title,
@@ -158,21 +161,21 @@ class _ThemePageState extends State<ThemePage> {
           : null,
       onTap: () {
         // 点击时更新主题模式
-        app_theme.AppTheme.settingsManager.setThemeMode(value);
+        _settingsManager.setThemeMode(value);
       },
     );
   }
 
   /// 构建颜色选项
   /// [colorOption] 颜色选项对象，包含颜色和名称
-  Widget _buildColorOption(app_theme.ColorOption colorOption) {
+  Widget _buildColorOption(ColorOption colorOption) {
     // 检查当前颜色是否被选中
-    final isSelected = colorOption.color.value == app_theme.AppTheme.seedColor.value;
+    final isSelected = colorOption.color.value == _settingsManager.seedColor.value;
     
     return GestureDetector(
       onTap: () {
         // 点击时更新种子颜色
-        app_theme.AppTheme.settingsManager.setSeedColor(colorOption.color);
+        _settingsManager.setSeedColor(colorOption.color);
       },
       child: Column(
         mainAxisSize: MainAxisSize.min,

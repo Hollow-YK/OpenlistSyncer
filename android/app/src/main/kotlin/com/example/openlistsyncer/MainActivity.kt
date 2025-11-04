@@ -1,4 +1,4 @@
-package com.example.moonraderopenlist
+package com.example.openlistsyncer
 
 import io.flutter.embedding.android.FlutterActivity
 

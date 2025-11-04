@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// 关于页面组件
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
 
@@ -7,6 +8,7 @@ class AboutPage extends StatefulWidget {
   State<AboutPage> createState() => _AboutPageState();
 }
 
+/// 关于页面状态类
 class _AboutPageState extends State<AboutPage> {
   String _appVersion = '0.0.2 - Beta 2'; // 应用版本
   int _clickCount = 0; // 点击计数器

@@ -1,6 +1,6 @@
 {
-    "name": "moonraderopenlist",
-    "short_name": "moonraderopenlist",
+    "name": "openlistsyncer",
+    "short_name": "openlistsyncer",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

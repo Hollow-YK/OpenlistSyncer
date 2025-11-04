@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'ui/android/login_page.dart';
-import 'ui/android/sync_page.dart';
-import 'ui/android/settings_page.dart'; // 修正：导入 settings_page.dart
-import 'ui/android/theme.dart' as app_theme; // 导入主题配置
+import 'services/settings_manager.dart';
+import 'UI/Android/login_page.dart';
+import 'UI/Android/sync_page.dart';
+import 'UI/Android/settings_page.dart';
 
 /// 应用入口点
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 确保Flutter绑定初始化
   
   // 初始化设置管理器 - 在运行应用前加载保存的设置
-  await app_theme.AppTheme.settingsManager.init();
+  await SettingsManager().init();
   
   runApp(const MyApp());
 }
@@ -24,11 +24,13 @@ class MyApp extends StatefulWidget {
 
 /// 主应用状态类 - 负责监听主题变化并重建应用
 class _MyAppState extends State<MyApp> {
+  final SettingsManager _settingsManager = SettingsManager();
+
   @override
   void initState() {
     super.initState();
     // 添加主题变化监听器 - 当主题改变时重建应用
-    app_theme.AppTheme.addListener(_onThemeChanged);
+    _settingsManager.addListener(_onThemeChanged);
   }
 
   /// 主题变化回调函数
@@ -41,17 +43,19 @@ class _MyAppState extends State<MyApp> {
   @override
   void dispose() {
     // 移除主题变化监听器 - 避免内存泄漏
-    app_theme.AppTheme.removeListener(_onThemeChanged);
+    _settingsManager.removeListener(_onThemeChanged);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeConfig = _settingsManager.getCurrentThemeConfig();
+    
     return MaterialApp(
       title: 'Openlist Sync',
-      theme: app_theme.AppTheme.lightTheme,      // 亮色主题
-      darkTheme: app_theme.AppTheme.darkTheme,   // 暗色主题
-      themeMode: app_theme.AppTheme.currentThemeMode, // 当前主题模式
+      theme: _settingsManager.generateThemeData(isLight: true),      // 亮色主题
+      darkTheme: _settingsManager.generateThemeData(isLight: false), // 暗色主题
+      themeMode: themeConfig['themeModeEnum'] as ThemeMode, // 当前主题模式
       home: const MainApp(),
     );
   }
@@ -72,6 +76,7 @@ class _MainAppState extends State<MainApp> {
   String? _loggedInUser; // 登录用户名
   bool _isLoggedIn = false; // 登录状态
   final TextEditingController _addressController = TextEditingController(); // 服务器地址控制器
+  final SettingsManager _settingsManager = SettingsManager();
 
   /// 更新认证状态
   /// [token] 新的认证令牌
@@ -112,7 +117,7 @@ class _MainAppState extends State<MainApp> {
         isLoggedIn: _isLoggedIn,
         onAuthStatusChanged: _updateAuthStatus,
       ),
-      SettingsPage( // 修正：使用 SettingsPage
+      SettingsPage(
         addressController: _addressController,
         authToken: _authToken,
         loggedInUser: _loggedInUser,
@@ -126,9 +131,9 @@ class _MainAppState extends State<MainApp> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
-        selectedItemColor: app_theme.AppTheme.seedColor, // 选中项使用主题色
+        selectedItemColor: _settingsManager.seedColor, // 选中项使用主题色
         unselectedItemColor: Colors.grey, // 未选中项使用灰色
-        backgroundColor: Theme.of(context).colorScheme.surface, // 背景色使用反向主色
+        backgroundColor: Theme.of(context).colorScheme.surface, // 背景色使用表面色
         type: BottomNavigationBarType.fixed, // 固定类型，确保所有项都显示标签
         items: [
           BottomNavigationBarItem(
