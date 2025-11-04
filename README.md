@@ -16,6 +16,8 @@
 </div>
 <br>
 
+[English](README_en.md) | 简体中文 | [繁体中文](README_zh_tw.md)
+
 ---
 
 </div>
@@ -28,13 +30,14 @@
 
 - 通过 API 登录 Openlist
 - 将 Openlist 里的文件夹同步到本地
+- 15种个性化主题配色，自动切换明暗模式
 
 ### 画饼
 
 *这些功能计划在将来实现，但是现在还没做
 
-- 明暗主题
 - 将本地的文件夹同步到Openlist
+- 记住上次使用的信息
 
 ## 使用说明
 
@@ -42,7 +45,7 @@
 
 ### 准备工作
 
-- 你需要有一个使用 [OpenList](https://github.com/OpenListTeam/OpenList) 搭建的或 API 与 OpenList 相同的私有云（使用到了 [User logout](https://fox.oplist.org/364155678e0)、[User login](https://fox.oplist.org/364155681e0)、[List directory contents](https://fox.oplist.org/364155732e0)、[Get file or directory info](https://fox.oplist.org/364155733e0)、[Get directory tree](https://fox.oplist.org/364155735e0)）
+- 你需要有一个使用 [OpenList](https://github.com/OpenListTeam/OpenList) 搭建的或 API 与 OpenList 相同的私有云。<!--（使用到了包括 [User logout](https://fox.oplist.org/364155678e0)、[User login](https://fox.oplist.org/364155681e0)、[List directory contents](https://fox.oplist.org/364155732e0)、[Get file or directory info](https://fox.oplist.org/364155733e0)、[Get directory tree](https://fox.oplist.org/364155735e0)）在内的多个API-->
 - 你还需要有一个**基本路径为`root`（根目录）的**账户。（欢迎提交PR帮忙适配基本路径不是`root`的账户。）
 - 安装本软件。你可以前往[Release](https://github.com/Hollow-YK/OpenlistSyncer/releases)下载相应版本的最新安装包并安装。如果你不知道安装哪个版本，就直接下载并安装文件名为`OpenlistSyncer-0.0.1-app-release.apk`形式的安装包。
 
@@ -66,7 +69,17 @@
 
 ### 开源项目
 
+- 使用了 [Flutter](https://github.com/flutter/flutter) 框架
 - 使用了 [OpenList](https://github.com/OpenListTeam/OpenList) 的 API
+- [http]（https://github.com/dart-lang/http/tree/master/pkgs/http）
+- [path_provider]（https://github.com/flutter/packages/tree/main/packages/path_provider/path_provider）
+- [file_picker]（https://github.com/miguelpruivo/flutter_file_picker）
+- [path]（https://github.com/dart-lang/core/tree/main/pkgs/path）
+- [permission_handler]（https://github.com/baseflow/flutter-permission-handler）
+- [url_launcher]（https://github.com/flutter/packages/tree/main/packages/url_launcher/url_launcher）
+- [shared_preferences]（https://github.com/flutter/packages/tree/main/packages/shared_preferences/shared_preferences）
+- [flutter_test]（https://github.com/dart-lang/test/tree/master/pkgs/test）
+- [flutter_lints]（https://github.com/flutter/packages/tree/main/packages/flutter_lints）
 
 还参考了一些开源Flutter项目的代码结构
 

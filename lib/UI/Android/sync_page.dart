@@ -3,8 +3,9 @@ import 'package:file_picker/file_picker.dart'; // 文件选择器
 import 'package:permission_handler/permission_handler.dart'; // 权限处理
 import 'package:path_provider/path_provider.dart'; // 路径提供器
 import '../../services/openlist_service.dart'; // 导入Openlist服务
+import '../../services/file_manager.dart'; // 导入文件管理器
 
-// 同步页面组件
+/// 同步页面组件
 class SyncPage extends StatefulWidget {
   final TextEditingController addressController;
   final String? authToken;
@@ -25,11 +26,12 @@ class SyncPage extends StatefulWidget {
   State<SyncPage> createState() => _SyncPageState();
 }
 
-// 同步页面状态类
+/// 同步页面状态类
 class _SyncPageState extends State<SyncPage> {
   final TextEditingController _sourcePathController = TextEditingController(); // 源路径控制器
   final TextEditingController _localPathController = TextEditingController(); // 本地路径控制器
   final OpenlistService _openlistService = OpenlistService(); // Openlist服务实例
+  final FileManager _fileManager = FileManager(); // 文件管理器实例
 
   bool _isSyncing = false; // 同步状态标识
   bool _hasStoragePermission = false; // 存储权限状态
@@ -48,13 +50,13 @@ class _SyncPageState extends State<SyncPage> {
     _initializeApp(); // 初始化应用
   }
 
-  // 初始化应用
+  /// 初始化应用
   Future<void> _initializeApp() async {
     await _checkPermissions(); // 检查权限
     await _initializeLocalPath(); // 初始化本地路径
   }
 
-  // 检查权限
+  /// 检查权限
   Future<void> _checkPermissions() async {
     try {
       final storageStatus = await Permission.storage.status; // 存储权限状态
@@ -73,7 +75,7 @@ class _SyncPageState extends State<SyncPage> {
     }
   }
 
-  // 请求权限
+  /// 请求权限
   Future<void> _requestPermissions() async {
     try {
       final storageStatus = await Permission.storage.request(); // 请求存储权限
@@ -96,7 +98,7 @@ class _SyncPageState extends State<SyncPage> {
     }
   }
 
-  // 显示权限请求对话框
+  /// 显示权限请求对话框
   Future<void> _showPermissionDialog() async {
     if (!mounted) return;
     return showDialog(
@@ -123,7 +125,7 @@ class _SyncPageState extends State<SyncPage> {
     );
   }
 
-  // 初始化本地路径
+  /// 初始化本地路径
   Future<void> _initializeLocalPath() async {
     try {
       final directory = await getExternalStorageDirectory(); // 获取外部存储目录
@@ -153,7 +155,7 @@ class _SyncPageState extends State<SyncPage> {
     }
   }
 
-  // 选择本地路径
+  /// 选择本地路径
   Future<void> _selectLocalPath() async {
     if (!_hasStoragePermission) {
       await _requestPermissions(); // 先请求权限
@@ -183,7 +185,7 @@ class _SyncPageState extends State<SyncPage> {
     }
   }
 
-  // 显示备选路径选择器
+  /// 显示备选路径选择器
   Future<void> _showFallbackPathSelector() async {
     if (!mounted) return;
     final result = await showDialog<String>(
@@ -228,7 +230,7 @@ class _SyncPageState extends State<SyncPage> {
     }
   }
 
-  // 开始同步
+  /// 开始同步
   Future<void> _startSync() async {
     // 验证输入字段
     if (widget.addressController.text.isEmpty ||
@@ -267,48 +269,88 @@ class _SyncPageState extends State<SyncPage> {
     });
 
     try {
-      final result = await _openlistService.syncFolder(
+      // 1. 获取所有文件列表
+      final fileList = await _openlistService.getAllFilesRecursive(
         address: widget.addressController.text.trim(),
         authToken: widget.authToken,
-        sourcePath: _sourcePathController.text.trim(),
-        localPath: _localPathController.text.trim(),
-        onProgress: (fileList, totalFiles, processedFiles, currentFileName) {
-          if (!mounted) return;
-          setState(() {
-            _fileList.clear();
-            _fileList.addAll(fileList); // 更新文件列表
-            _totalFiles = totalFiles;
-            _processedFiles = processedFiles;
-            _currentFileName = currentFileName;
-          });
-        },
-        onLog: _addLog, // 日志回调
-        onTokenExpired: () { // 令牌过期回调
-          if (!mounted) return;
-          _addLog('认证令牌已过期，需要重新登录');
-          widget.onAuthStatusChanged(null, null, false); // 清除认证状态
-          _showSnackBar('密码已更改，请重新登录');
-        },
+        basePath: _sourcePathController.text.trim(),
+        onProgress: _addLog,
       );
+
+      if (!mounted) return;
+      setState(() {
+        _fileList.clear();
+        _fileList.addAll(fileList);
+        _totalFiles = fileList.length;
+      });
+
+      if (_fileList.isEmpty) {
+        _addLog('目录中没有文件可同步');
+        _showSnackBar('目录中没有文件可同步');
+        return;
+      }
+
+      _addLog('发现 $_totalFiles 个文件，开始下载...');
+
+      // 2. 下载所有文件
+      int successCount = 0;
+      int failCount = 0;
+
+      for (int i = 0; i < _fileList.length; i++) {
+        final file = _fileList[i];
+        _currentFileName = file.fsObject.name;
+        _addLog('正在下载 ($i/$_totalFiles): $_currentFileName');
+
+        // 构建下载URL
+        final downloadUrl = _openlistService.buildDownloadUrl(
+          address: widget.addressController.text.trim(),
+          filePath: file.fsObject.path,
+          sign: file.fsObject.sign,
+        );
+
+        // 构建本地文件路径
+        final localFilePath = _fileManager.buildSafeFilePath(
+          _localPathController.text.trim(),
+          file.relativePath,
+        );
+
+        // 下载文件
+        final success = await _fileManager.downloadFile(
+          downloadUrl: downloadUrl,
+          localFilePath: localFilePath,
+          headers: widget.authToken != null ? {'Authorization': widget.authToken!} : null,
+        );
+
+        if (success) {
+          successCount++;
+          _addLog('✓ 下载完成: $_currentFileName');
+        } else {
+          failCount++;
+          _addLog('✗ 下载失败: $_currentFileName');
+        }
+
+        if (!mounted) return;
+        setState(() {
+          _processedFiles = i + 1;
+        });
+      }
+
+      _addLog('同步完成: $successCount 成功, $failCount 失败');
       
-      if (result) {
-        _addLog('同步完成！共同步 $_totalFiles 个文件');
+      if (failCount == 0) {
         _showSnackBar('同步完成！共同步 $_totalFiles 个文件');
       } else {
-        _addLog('部分文件同步失败');
-        _showSnackBar('部分文件同步失败，请查看日志');
+        _showSnackBar('部分文件同步失败，成功 $successCount 个，失败 $failCount 个');
       }
     } catch (e) {
       _addLog('同步出错: $e');
       
-      // 更详细的错误处理
-      if (e.toString().contains('密码已更改') || e is TokenExpiredException) {
-        _showSnackBar('密码已更改，请重新登录');
-        // 自动触发重新登录
+      // 错误处理
+      if (e.toString().contains('密码已更改') || e.toString().contains('TokenExpired')) {
+        _showSnackBar('认证已过期，请重新登录');
         widget.onAuthStatusChanged(null, null, false);
-      } else if (e.toString().contains('认证令牌')) {
+      } else if (e.toString().contains('认证')) {
         _showSnackBar('认证失败，请重新登录');
-        // 自动触发重新登录
         widget.onAuthStatusChanged(null, null, false);
       } else {
         _showSnackBar('同步出错: $e');
@@ -321,7 +363,7 @@ class _SyncPageState extends State<SyncPage> {
     }
   }
 
-  // 添加日志
+  /// 添加日志
   void _addLog(String message) {
     if (!mounted) return;
     final timestamp = DateTime.now().toString().split('.').first; // 时间戳
@@ -330,7 +372,7 @@ class _SyncPageState extends State<SyncPage> {
     });
   }
 
-  // 显示提示消息
+  /// 显示提示消息
   void _showSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -536,7 +578,7 @@ class _SyncPageState extends State<SyncPage> {
     );
   }
 
-  // 构建权限警告组件
+  /// 构建权限警告组件
   Widget _buildPermissionWarning() {
     return Card(
       color: Colors.orange[50], // 橙色警告背景
@@ -582,7 +624,7 @@ class _SyncPageState extends State<SyncPage> {
     );
   }
 
-  // 构建通用输入字段
+  /// 构建通用输入字段
   Widget _buildInputField({
     required TextEditingController controller,
     required String label,
@@ -615,7 +657,7 @@ class _SyncPageState extends State<SyncPage> {
     );
   }
 
-  // 构建本地路径字段
+  /// 构建本地路径字段
   Widget _buildLocalPathField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,7 +708,7 @@ class _SyncPageState extends State<SyncPage> {
     );
   }
 
-  // 构建进度指示器
+  /// 构建进度指示器
   Widget _buildProgressIndicator() {
     return Card(
       child: Padding(
@@ -717,7 +759,7 @@ class _SyncPageState extends State<SyncPage> {
     );
   }
 
-  // 构建文件列表预览
+  /// 构建文件列表预览
   Widget _buildFileListPreview() {
     return Card(
       child: Padding(
@@ -767,7 +809,7 @@ class _SyncPageState extends State<SyncPage> {
     );
   }
 
-  // 构建同步日志
+  /// 构建同步日志
   Widget _buildSyncLogs() {
     return Card(
       child: Padding(
@@ -819,7 +861,7 @@ class _SyncPageState extends State<SyncPage> {
     );
   }
 
-  // 构建同步按钮
+  /// 构建同步按钮
   Widget _buildSyncButton() {
     return SizedBox(
       width: double.infinity, // 宽度填满

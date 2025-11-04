@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../../services/openlist_service.dart';
 
-// 登录页面组件
+/// 登录页面组件
 class LoginPage extends StatefulWidget {
   final TextEditingController addressController; // 服务器地址控制器
   final String? authToken; // 认证令牌
@@ -23,8 +22,11 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-// 登录页面状态类
+/// 登录页面状态类
 class _LoginPageState extends State<LoginPage> {
+  final OpenlistService _openlistService = OpenlistService(); // Openlist服务实例
+  bool _isLoggingIn = false; // 登录状态标识，防止重复点击
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -153,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // 构建地址输入字段
+  /// 构建地址输入字段
   Widget _buildAddressField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,7 +192,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // 构建账户设置区域
+  /// 构建账户设置区域
   Widget _buildAccountSettings() {
     return Column(
       children: [
@@ -249,131 +251,211 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // 显示登录对话框
+  /// 显示登录对话框
   Future<void> _showLoginDialog() async {
     final TextEditingController usernameController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
     final TextEditingController otpController = TextEditingController();
 
-    return showDialog(
+    bool isDialogOpen = true; // 跟踪对话框状态
+
+    await showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('登录 Openlist'),
-          content: SingleChildScrollView( // 可滚动内容
-            child: Column(
-              mainAxisSize: MainAxisSize.min, // 最小高度
-              children: [
-                TextField(
-                  controller: usernameController,
-                  decoration: const InputDecoration(
-                    labelText: '用户名',
-                    border: OutlineInputBorder(),
-                  ),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // 安全的setDialogState包装函数
+            void safeSetDialogState(void Function() fn) {
+              if (isDialogOpen && mounted) {
+                setDialogState(fn);
+              }
+            }
+
+            return AlertDialog(
+              title: const Text('登录 Openlist'),
+              content: SingleChildScrollView( // 可滚动内容
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, // 最小高度
+                  children: [
+                    TextField(
+                      controller: usernameController,
+                      decoration: const InputDecoration(
+                        labelText: '用户名',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: passwordController,
+                      decoration: const InputDecoration(
+                        labelText: '密码',
+                        border: OutlineInputBorder(),
+                      ),
+                      obscureText: true, // 密码模式
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: otpController,
+                      decoration: const InputDecoration(
+                        labelText: '两步验证码 (2FA，可选)',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number, // 数字键盘
+                    ),
+                    const SizedBox(height: 16),
+                    if (_isLoggingIn) // 登录中显示进度指示器
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: passwordController,
-                  decoration: const InputDecoration(
-                    labelText: '密码',
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true, // 密码模式
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                          isDialogOpen = false; // 标记对话框已关闭
+                          Navigator.of(context).pop(); // 关闭按钮
+                        },
+                  child: const Text('关闭'),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: otpController,
-                  decoration: const InputDecoration(
-                    labelText: '两步验证码 (2FA，可选)',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number, // 数字键盘
+                FilledButton(
+                  onPressed: _isLoggingIn
+                      ? null // 登录中禁用登录按钮
+                      : () async {
+                          safeSetDialogState(() {
+                            _isLoggingIn = true; // 开始登录
+                          });
+                          
+                          await _performLogin(
+                            usernameController.text.trim(),
+                            passwordController.text.trim(),
+                            otpController.text.trim(),
+                            safeSetDialogState,
+                          );
+                          
+                          // 只有在对话框仍然显示时才关闭
+                          if (isDialogOpen && mounted && Navigator.of(context).canPop()) {
+                            isDialogOpen = false; // 标记对话框已关闭
+                            Navigator.of(context).pop();
+                          }
+                        },
+                  child: const Text('登录'),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(), // 取消按钮
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                await _performLogin( // 执行登录
-                  usernameController.text.trim(),
-                  passwordController.text.trim(),
-                  otpController.text.trim(),
-                );
-                if (!mounted) return;
-                Navigator.of(context).pop(); // 关闭对话框
-              },
-              child: const Text('登录'),
-            ),
-          ],
+            );
+          },
         );
       },
-    );
+    ).then((_) {
+      // 对话框关闭后的回调
+      isDialogOpen = false;
+      _isLoggingIn = false; // 确保重置登录状态
+    });
   }
 
-  // 执行登录操作
-  Future<void> _performLogin(String username, String password, String otpCode) async {
+  /// 执行登录操作
+  Future<void> _performLogin(
+    String username,
+    String password,
+    String otpCode,
+    void Function(void Function()) safeSetDialogState,
+  ) async {
     final address = widget.addressController.text.trim();
 
     if (address.isEmpty) {
       _showSnackBar('请先输入Openlist地址');
+      safeSetDialogState(() {
+        _isLoggingIn = false; // 重置登录状态
+      });
       return;
     }
 
     if (username.isEmpty || password.isEmpty) {
       _showSnackBar('请输入用户名和密码');
+      safeSetDialogState(() {
+        _isLoggingIn = false; // 重置登录状态
+      });
       return;
     }
 
     try {
-      final url = Uri.parse('http://$address/api/auth/login'); // 构建登录URL
-      final Map<String, dynamic> requestBody = {
-        'username': username,
-        'password': password,
-      };
-      
-      if (otpCode.isNotEmpty) {
-        requestBody['otp_code'] = otpCode; // 添加两步验证码
-      }
-
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody), // 编码请求体
+      // 使用OpenlistService进行登录
+      final result = await _openlistService.login(
+        address: address,
+        username: username,
+        password: password,
+        otpCode: otpCode,
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        safeSetDialogState(() {
+          _isLoggingIn = false; // 重置登录状态
+        });
+        return;
+      }
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['code'] == 200) {
-          // 登录成功，更新认证状态
-          widget.onAuthStatusChanged(data['data']['token'], username, true);
-        } else {
-          _showSnackBar('登录失败: ${data['message']}');
-        }
+      if (result['success'] == true) {
+        // 登录成功，更新认证状态
+        widget.onAuthStatusChanged(result['token'], username, true);
+        _showSnackBar('登录成功');
       } else {
-        _showSnackBar('登录失败: HTTP ${response.statusCode}');
+        _showSnackBar(result['message']);
       }
     } catch (e) {
-      if (!mounted) return;
-      _showSnackBar('登录出错: $e');
+      // 处理网络错误和其他异常
+      if (!mounted) {
+        safeSetDialogState(() {
+          _isLoggingIn = false; // 重置登录状态
+        });
+        return;
+      }
+      
+      // 根据错误类型提供更友好的错误信息
+      String errorMessage = '登录出错: $e';
+      if (e.toString().contains('SocketException') || 
+          e.toString().contains('Connection refused') ||
+          e.toString().contains('Failed host lookup')) {
+        errorMessage = '无法连接到服务器，请检查地址和网络连接';
+      } else if (e.toString().contains('Timeout')) {
+        errorMessage = '连接超时，请检查网络连接或服务器状态';
+      }
+      
+      _showSnackBar(errorMessage);
+    } finally {
+      // 确保重置登录状态
+      if (mounted) {
+        safeSetDialogState(() {
+          _isLoggingIn = false; // 重置登录状态
+        });
+      }
     }
   }
 
-  // 显示提示消息
+  /// 显示提示消息
   void _showSnackBar(String message) {
     if (!mounted) return;
+    
+    // 使用 ScaffoldMessenger 显示 SnackBar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4), // 延长显示时间以便用户阅读
         behavior: SnackBarBehavior.floating, // 浮动样式
+        action: SnackBarAction(
+          label: '关闭',
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // 清理资源
+    _isLoggingIn = false;
+    super.dispose();
   }
 }

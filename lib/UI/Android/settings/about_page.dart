@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// 关于页面组件
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
 
@@ -7,7 +8,9 @@ class AboutPage extends StatefulWidget {
   State<AboutPage> createState() => _AboutPageState();
 }
 
+/// 关于页面状态类
 class _AboutPageState extends State<AboutPage> {
+  String _appVersion = '0.0.2 - Beta 2'; // 应用版本
   int _clickCount = 0; // 点击计数器
   bool _showHiddenText = false; // 是否显示隐藏文本
 
@@ -63,7 +66,7 @@ class _AboutPageState extends State<AboutPage> {
             ),
             const SizedBox(height: 4),
             Text(
-              '版本 0.0.2 - Beta 1',
+              '版本 ' + _appVersion,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -89,7 +92,7 @@ class _AboutPageState extends State<AboutPage> {
                       const SizedBox(height: 12),
                       Text(
                         'Openlist 同步器（Openlist Syncer）是一个专为 Openlist 服务器设计的文件同步应用。\n'
-                        '它可以帮助您轻松地将服务器上的文件同步到本地设备。',
+                        '它可以帮助您轻松地（也许）将服务器上的文件同步到本地设备。',
                         style: Theme.of(context).textTheme.bodyMedium,
                         textAlign: TextAlign.justify,
                       ),
@@ -112,13 +115,13 @@ class _AboutPageState extends State<AboutPage> {
                         ),
                       ],
                       // 可选：添加点击计数提示（调试用）
-                      // if (!_showHiddenText && _clickCount > 0) ...[
-                      //   const SizedBox(height: 8),
-                      //   Text(
-                      //     '点击次数: $_clickCount/5',
-                      //     style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      //   ),
-                      // ],
+                      /* if (!_showHiddenText && _clickCount > 0) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          '点击次数: $_clickCount/5',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],*/
                     ],
                   ),
                 ),
@@ -222,6 +225,15 @@ class _AboutPageState extends State<AboutPage> {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 12),
+                    Text(
+                      'This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    Text(
+                      'This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 12),
                     // 添加查看完整许可证的按钮
                     SizedBox(
                       width: double.infinity,
@@ -230,7 +242,7 @@ class _AboutPageState extends State<AboutPage> {
                           showLicensePage(
                             context: context,
                             applicationName: 'Openlist Syncer',
-                            applicationVersion: '0.0.2',
+                            applicationVersion: _appVersion,
                             applicationLegalese: 'Licensed under GNU Affero General Public License v3.0',
                           );
                         },
@@ -243,17 +255,24 @@ class _AboutPageState extends State<AboutPage> {
             ),
 
             const SizedBox(height: 24),
-            
-            // 版权信息
+
+            // 许可和版权信息
             Text(
-              '© 2025 域空Hollow',
+              'GNU Affero General Public License v3.0 Licensed.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
+            
             Text(
-              'AGPL-3.0 Licensed',
+              '版权所有 © 2025 域空 Hollow。保留所有权利。',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Text(
+              'Copyright © 2025 域空Hollow. All Rights Reserved.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),

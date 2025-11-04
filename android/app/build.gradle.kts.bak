@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.openlistsyncer"
+    namespace = "com.example.moonraderopenlist"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

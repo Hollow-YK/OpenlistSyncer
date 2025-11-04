@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'settings/about.dart'; // 导入关于页面
+import 'settings/about_page.dart'; // 导入关于页面
 import 'settings/theme_page.dart'; // 导入主题设置页面
 
+/// 设置页面组件
 class SettingsPage extends StatefulWidget {
   final TextEditingController addressController;
   final String? authToken;
@@ -23,6 +24,7 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
+/// 设置页面状态类
 class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
@@ -128,8 +130,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 _buildSettingsItem(
                   icon: Icons.palette_outlined,
                   title: '主题',
-                  //subtitle: '切换浅色与深色主题',
-                  subtitle: '还没写完，下次一定',
+                  subtitle: '切换主题明暗与配色',
                   onTap: () {
                     // 跳转到主题设置
                     Navigator.push(
@@ -233,7 +234,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     children: [
                       Icon(Icons.logout),
                       SizedBox(width: 8),
-                      Text('退出登录'),
+                      Text('退出登录 Openlist'),
                     ],
                   ),
                 ),
@@ -245,7 +246,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // 构建设置项组件
+  /// 构建设置项组件
   Widget _buildSettingsItem({
     required IconData icon,
     required String title,
@@ -265,7 +266,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // 显示提示消息
+  /// 显示提示消息
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
