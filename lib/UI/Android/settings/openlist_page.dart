@@ -50,6 +50,12 @@ class _OpenlistPageState extends State<OpenlistPage> {
 
   /// 保存设置
   Future<void> _saveSettings() async {
+    // 首先验证设置的有效性
+    if (!_validateSettings()) {
+      _showSnackBar('设置验证失败，请检查输入');
+      return;
+    }
+
     // 保存开关设置
     await _dataManager.setRememberAddress(_dataManager.rememberAddress);
     await _dataManager.setRememberAccount(_dataManager.rememberAccount);
@@ -59,30 +65,162 @@ class _OpenlistPageState extends State<OpenlistPage> {
     // 保存服务器地址（如果启用记住地址）
     if (_dataManager.rememberAddress) {
       await _dataManager.setServerAddress(_addressController.text.trim());
+    } else {
+      // 如果未启用记住地址，清除已保存的地址
+      await _dataManager.setServerAddress('');
     }
 
     // 保存用户名（如果启用记住账号）
     if (_dataManager.rememberAccount) {
       await _dataManager.setUsername(_usernameController.text.trim());
+    } else {
+      // 如果未启用记住账号，清除已保存的用户名
+      await _dataManager.setUsername('');
     }
 
     // 保存密码（如果启用记住密码）
     if (_dataManager.rememberPassword) {
       await _dataManager.setPassword(_passwordController.text.trim());
+    } else {
+      // 如果未启用记住密码，清除已保存的密码
+      await _dataManager.setPassword('');
     }
 
     _showSnackBar('设置已保存');
   }
 
-  /// 验证自动登录设置
+  /// 验证设置的有效性
+  /// 返回：设置是否有效
+  bool _validateSettings() {
+    // 检查自动登录设置
+    if (_dataManager.autoLogin) {
+      // 自动登录需要所有信息都填写完整
+      final hasAddress = _addressController.text.trim().isNotEmpty;
+      final hasUsername = _usernameController.text.trim().isNotEmpty;
+      final hasPassword = _passwordController.text.trim().isNotEmpty;
+      
+      if (!hasAddress || !hasUsername || !hasPassword) {
+        return false;
+      }
+    }
+
+    // 检查各个记住功能的输入是否完整
+    if (_dataManager.rememberAddress && _addressController.text.trim().isEmpty) {
+      return false;
+    }
+    if (_dataManager.rememberAccount && _usernameController.text.trim().isEmpty) {
+      return false;
+    }
+    if (_dataManager.rememberPassword && _passwordController.text.trim().isEmpty) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// 检查保存按钮是否可用
+  /// 返回：保存按钮是否应该启用
+  bool get _isSaveButtonEnabled {
+    // 如果自动登录开启，需要验证所有信息完整
+    if (_dataManager.autoLogin) {
+      final hasAddress = _addressController.text.trim().isNotEmpty;
+      final hasUsername = _usernameController.text.trim().isNotEmpty;
+      final hasPassword = _passwordController.text.trim().isNotEmpty;
+      
+      if (!hasAddress || !hasUsername || !hasPassword) {
+        return false;
+      }
+    }
+
+    // 检查各个记住功能的输入是否完整
+    // 如果某个记住功能开启，但对应的输入框为空，则不允许保存
+    if (_dataManager.rememberAddress && _addressController.text.trim().isEmpty) {
+      return false;
+    }
+    if (_dataManager.rememberAccount && _usernameController.text.trim().isEmpty) {
+      return false;
+    }
+    if (_dataManager.rememberPassword && _passwordController.text.trim().isEmpty) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// 检查自动登录是否应该禁用
+  /// 当记住地址、账号、密码都没有启用时，自动登录应该禁用
+  bool get _isAutoLoginDisabled {
+    return !_dataManager.rememberAddress && 
+           !_dataManager.rememberAccount && 
+           !_dataManager.rememberPassword;
+  }
+
+  /// 处理记住功能开关变化
+  /// [type] 开关类型：'address', 'account', 'password'
+  /// [newValue] 新的开关状态
+  Future<void> _handleRememberSwitchChange(String type, bool newValue) async {
+    switch (type) {
+      case 'address':
+        await _dataManager.setRememberAddress(newValue);
+        break;
+      case 'account':
+        await _dataManager.setRememberAccount(newValue);
+        break;
+      case 'password':
+        await _dataManager.setRememberPassword(newValue);
+        break;
+    }
+
+    // 检查是否需要禁用自动登录
+    // 如果所有记住功能都关闭，自动关闭自动登录
+    if (_isAutoLoginDisabled && _dataManager.autoLogin) {
+      await _dataManager.setAutoLogin(false);
+    }
+
+    setState(() {});
+  }
+
+  /// 处理自动登录开关变化
+  /// [newValue] 新的自动登录状态
+  Future<void> _handleAutoLoginSwitchChange(bool newValue) async {
+    // 如果尝试开启自动登录，但设置不满足条件，显示提示
+    if (newValue && !_validateAutoLoginSettings()) {
+      _showSnackBar('自动登录需要填写完整的服务器信息并启用所有记住功能');
+      return;
+    }
+
+    await _dataManager.setAutoLogin(newValue);
+    setState(() {});
+  }
+
+  /// 验证自动登录设置是否有效
+  /// 自动登录需要：所有记住功能都启用，且对应的输入框都有内容
   bool _validateAutoLoginSettings() {
-    if (!_dataManager.autoLogin) return true;
-    
+    if (!_dataManager.rememberAddress || 
+        !_dataManager.rememberAccount || 
+        !_dataManager.rememberPassword) {
+      return false;
+    }
+
     final hasAddress = _addressController.text.trim().isNotEmpty;
     final hasUsername = _usernameController.text.trim().isNotEmpty;
     final hasPassword = _passwordController.text.trim().isNotEmpty;
     
     return hasAddress && hasUsername && hasPassword;
+  }
+
+  /// 清空所有记录
+  Future<void> _clearAllRecords() async {
+    // 清空输入框
+    _addressController.clear();
+    _usernameController.clear();
+    _passwordController.clear();
+
+    // 关闭自动登录（因为信息已被清空）
+    await _dataManager.setAutoLogin(false);
+
+    setState(() {});
+    _showSnackBar('记录已清空');
   }
 
   /// 显示提示消息
@@ -106,7 +244,7 @@ class _OpenlistPageState extends State<OpenlistPage> {
           if (!_isLoading)
             IconButton(
               icon: const Icon(Icons.save),
-              onPressed: _saveSettings,
+              onPressed: _isSaveButtonEnabled ? _saveSettings : null,
               tooltip: '保存设置',
             ),
         ],
@@ -137,45 +275,27 @@ class _OpenlistPageState extends State<OpenlistPage> {
                             title: '记住Openlist地址',
                             subtitle: '自动保存上次使用的服务器地址',
                             value: _dataManager.rememberAddress,
-                            onChanged: (value) {
-                              setState(() {
-                                _dataManager.setRememberAddress(value);
-                              });
-                            },
+                            onChanged: (value) => _handleRememberSwitchChange('address', value),
                           ),
                           _buildSwitchItem(
                             title: '记住Openlist账号',
                             subtitle: '自动保存上次使用的用户名',
                             value: _dataManager.rememberAccount,
-                            onChanged: (value) {
-                              setState(() {
-                                _dataManager.setRememberAccount(value);
-                              });
-                            },
+                            onChanged: (value) => _handleRememberSwitchChange('account', value),
                           ),
                           _buildSwitchItem(
                             title: '记住Openlist密码',
                             subtitle: '自动保存密码用于快速登录',
                             value: _dataManager.rememberPassword,
-                            onChanged: (value) {
-                              setState(() {
-                                _dataManager.setRememberPassword(value);
-                              });
-                            },
+                            onChanged: (value) => _handleRememberSwitchChange('password', value),
                           ),
                           _buildSwitchItem(
                             title: '自动登录',
                             subtitle: '应用启动时自动尝试登录',
                             value: _dataManager.autoLogin,
-                            onChanged: (value) {
-                              setState(() {
-                                if (value && !_validateAutoLoginSettings()) {
-                                  _showSnackBar('请先填写服务器地址、用户名和密码');
-                                  return;
-                                }
-                                _dataManager.setAutoLogin(value);
-                              });
-                            },
+                            onChanged: _isAutoLoginDisabled ? null : _handleAutoLoginSwitchChange,
+                            // 当所有记住功能都关闭时，禁用自动登录开关
+                            enabled: !_isAutoLoginDisabled,
                           ),
                         ],
                       ),
@@ -205,6 +325,7 @@ class _OpenlistPageState extends State<OpenlistPage> {
                             icon: Icons.cloud,
                             enabled: _dataManager.rememberAddress,
                             onChanged: (_) {
+                              // 输入内容变化时更新UI状态
                               setState(() {});
                             },
                           ),
@@ -216,6 +337,7 @@ class _OpenlistPageState extends State<OpenlistPage> {
                             icon: Icons.person,
                             enabled: _dataManager.rememberAccount,
                             onChanged: (_) {
+                              // 输入内容变化时更新UI状态
                               setState(() {});
                             },
                           ),
@@ -228,14 +350,28 @@ class _OpenlistPageState extends State<OpenlistPage> {
                             obscureText: true,
                             enabled: _dataManager.rememberPassword,
                             onChanged: (_) {
+                              // 输入内容变化时更新UI状态
                               setState(() {});
                             },
                           ),
+                          // 自动登录验证提示
                           if (_dataManager.autoLogin && !_validateAutoLoginSettings())
                             Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: Text(
-                                '自动登录需要填写完整的服务器信息',
+                                '自动登录需要填写完整的服务器信息并启用所有记住功能',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          // 保存设置验证提示
+                          if (!_isSaveButtonEnabled)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                _getSaveButtonDisabledReason(),
                                 style: TextStyle(
                                   color: Theme.of(context).colorScheme.error,
                                   fontSize: 12,
@@ -253,19 +389,14 @@ class _OpenlistPageState extends State<OpenlistPage> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () {
-                            _addressController.clear();
-                            _usernameController.clear();
-                            _passwordController.clear();
-                            _showSnackBar('记录已清空');
-                          },
+                          onPressed: _clearAllRecords,
                           child: const Text('清空记录'),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: FilledButton(
-                          onPressed: _dataManager.autoLogin && !_validateAutoLoginSettings() ? null : _saveSettings,
+                          onPressed: _isSaveButtonEnabled ? _saveSettings : null,
                           child: const Text('保存设置'),
                         ),
                       ),
@@ -336,12 +467,36 @@ class _OpenlistPageState extends State<OpenlistPage> {
     );
   }
 
+  /// 获取保存按钮禁用原因的描述
+  String _getSaveButtonDisabledReason() {
+    if (_dataManager.autoLogin) {
+      // 自动登录开启时，需要所有信息完整
+      if (_addressController.text.trim().isEmpty) return '自动登录需要填写服务器地址';
+      if (_usernameController.text.trim().isEmpty) return '自动登录需要填写用户名';
+      if (_passwordController.text.trim().isEmpty) return '自动登录需要填写密码';
+    }
+
+    // 检查各个记住功能的输入是否完整
+    if (_dataManager.rememberAddress && _addressController.text.trim().isEmpty) {
+      return '启用"记住地址"时需要填写服务器地址';
+    }
+    if (_dataManager.rememberAccount && _usernameController.text.trim().isEmpty) {
+      return '启用"记住账号"时需要填写用户名';
+    }
+    if (_dataManager.rememberPassword && _passwordController.text.trim().isEmpty) {
+      return '启用"记住密码"时需要填写密码';
+    }
+
+    return '请完善设置信息';
+  }
+
   /// 构建开关选项
   Widget _buildSwitchItem({
     required String title,
     required String subtitle,
     required bool value,
-    required ValueChanged<bool> onChanged,
+    required ValueChanged<bool>? onChanged,
+    bool enabled = true,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -353,7 +508,7 @@ class _OpenlistPageState extends State<OpenlistPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -362,7 +517,6 @@ class _OpenlistPageState extends State<OpenlistPage> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -370,7 +524,7 @@ class _OpenlistPageState extends State<OpenlistPage> {
           ),
           Switch(
             value: value,
-            onChanged: onChanged,
+            onChanged: enabled ? onChanged : null,
           ),
         ],
       ),
@@ -393,7 +547,6 @@ class _OpenlistPageState extends State<OpenlistPage> {
         Text(
           label,
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 16,
           ),
         ),
@@ -405,10 +558,10 @@ class _OpenlistPageState extends State<OpenlistPage> {
           onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hintText,
-            prefixIcon: Icon(icon),
+            prefixIcon: Icon(
+              icon,
+            ),
             border: const OutlineInputBorder(),
-            filled: true,
-            fillColor: enabled ? null : Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
           ),
         ),
       ],
