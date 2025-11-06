@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'settings/about_page.dart'; // 导入关于页面
+import 'settings/openlist_page.dart'; // 导入Openlist设置页面
 import 'settings/theme_page.dart'; // 导入主题设置页面
+import 'settings/about_page.dart'; // 导入关于页面
 
 /// 设置页面组件
 class SettingsPage extends StatefulWidget {
@@ -110,8 +111,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: 'Openlist设置',
                   subtitle: '记住Openlist地址、账号等',
                   onTap: () {
-                    // 跳转到Openlist选项
-                    _showSnackBar('还没写完，下次一定');
+                    // 跳转到Openlist设置页面
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const OpenlistPage(),
+                      ),
+                    );
                   },
                   trailing: const Icon(Icons.chevron_right),
                 ),

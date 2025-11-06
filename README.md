@@ -71,15 +71,15 @@
 
 - 使用了 [Flutter](https://github.com/flutter/flutter) 框架
 - 使用了 [OpenList](https://github.com/OpenListTeam/OpenList) 的 API
-- [http]（https://github.com/dart-lang/http/tree/master/pkgs/http）
-- [path_provider]（https://github.com/flutter/packages/tree/main/packages/path_provider/path_provider）
-- [file_picker]（https://github.com/miguelpruivo/flutter_file_picker）
-- [path]（https://github.com/dart-lang/core/tree/main/pkgs/path）
-- [permission_handler]（https://github.com/baseflow/flutter-permission-handler）
-- [url_launcher]（https://github.com/flutter/packages/tree/main/packages/url_launcher/url_launcher）
-- [shared_preferences]（https://github.com/flutter/packages/tree/main/packages/shared_preferences/shared_preferences）
-- [flutter_test]（https://github.com/dart-lang/test/tree/master/pkgs/test）
-- [flutter_lints]（https://github.com/flutter/packages/tree/main/packages/flutter_lints）
+- [http](https://github.com/dart-lang/http/tree/master/pkgs/http)
+- [path_provider](https://github.com/flutter/packages/tree/main/packages/path_provider/path_provider)
+- [file_picker](https://github.com/miguelpruivo/flutter_file_picker)
+- [path](https://github.com/dart-lang/core/tree/main/pkgs/path)
+- [permission_handler](https://github.com/baseflow/flutter-permission-handler)
+- [url_launcher](https://github.com/flutter/packages/tree/main/packages/url_launcher/url_launcher)
+- [shared_preferences](https://github.com/flutter/packages/tree/main/packages/shared_preferences/shared_preferences)
+- [flutter_test](https://github.com/dart-lang/test/tree/master/pkgs/test)
+- [flutter_lints](https://github.com/flutter/packages/tree/main/packages/flutter_lints)
 
 还参考了一些开源Flutter项目的代码结构
 

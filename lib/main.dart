@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'services/settings_manager.dart';
+import 'services/data_manager.dart';
 import 'UI/Android/login_page.dart';
 import 'UI/Android/sync_page.dart';
 import 'UI/Android/settings_page.dart';
@@ -10,6 +11,9 @@ void main() async {
   
   // 初始化设置管理器 - 在运行应用前加载保存的设置
   await SettingsManager().init();
+  
+  // 初始化数据管理器 - 加载用户数据
+  await DataManager().init();
   
   runApp(const MyApp());
 }
