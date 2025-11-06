@@ -1,5 +1,7 @@
+
 import 'package:flutter/material.dart';
 import '../../services/openlist_service.dart';
+import '../../services/data_manager.dart'; // 导入 DataManager
 
 /// 登录页面组件
 class LoginPage extends StatefulWidget {
@@ -25,7 +27,103 @@ class LoginPage extends StatefulWidget {
 /// 登录页面状态类
 class _LoginPageState extends State<LoginPage> {
   final OpenlistService _openlistService = OpenlistService(); // Openlist服务实例
+  final DataManager _dataManager = DataManager(); // 数据管理器实例
   bool _isLoggingIn = false; // 登录状态标识，防止重复点击
+  bool _showQuickLoginButton = false; // 是否显示一键登录按钮
+  bool _isAutoLoginAttempted = false; // 是否已尝试自动登录
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePage();
+  }
+
+  /// 初始化页面
+  Future<void> _initializePage() async {
+    await _dataManager.init();
+    
+    // 如果启用了记住地址，自动填充地址
+    if (_dataManager.rememberAddress && _dataManager.serverAddress.isNotEmpty) {
+      widget.addressController.text = _dataManager.serverAddress;
+    }
+
+    // 检查是否显示一键登录按钮
+    _updateQuickLoginButtonVisibility();
+
+    // 尝试自动登录
+    if (!_isAutoLoginAttempted && _dataManager.canAutoLogin) {
+      _isAutoLoginAttempted = true;
+      await _performAutoLogin();
+    }
+  }
+
+  /// 更新一键登录按钮的可见性
+  void _updateQuickLoginButtonVisibility() {
+    final hasAddress = widget.addressController.text.isNotEmpty;
+    final canUseQuickLogin = _dataManager.canUseQuickLogin;
+    
+    setState(() {
+      // 如果启用了记住地址，直接检查是否有足够信息
+      // 如果没有启用记住地址，需要用户先输入地址
+      _showQuickLoginButton = _dataManager.rememberAddress 
+          ? canUseQuickLogin
+          : (hasAddress && canUseQuickLogin);
+    });
+  }
+
+  /// 执行自动登录
+  Future<void> _performAutoLogin() async {
+    if (!_dataManager.canAutoLogin) return;
+
+    setState(() {
+      _isLoggingIn = true;
+    });
+
+    try {
+      final password = await _dataManager.getPasswordFromSecureStorage();
+      
+      final result = await _openlistService.login(
+        address: _dataManager.serverAddress,
+        username: _dataManager.username,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        // 登录成功，更新认证状态
+        widget.onAuthStatusChanged(result['token'], _dataManager.username, true);
+        _showSnackBar('自动登录成功');
+      } else {
+        // 自动登录失败，显示提示并填充信息
+        _showAutoLoginFailedDialog();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showAutoLoginFailedDialog();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoggingIn = false;
+        });
+      }
+    }
+  }
+
+  /// 显示自动登录失败对话框
+  void _showAutoLoginFailedDialog() {
+    _showSnackBar('自动登录失败，请检查网络连接或手动登录');
+    
+    // 填充自动登录信息到输入框
+    if (_dataManager.rememberAddress) {
+      widget.addressController.text = _dataManager.serverAddress;
+    }
+    
+    // 注意：这里我们不自动填充密码，因为密码是加密存储的
+    // 用户需要手动输入密码
+    
+    _updateQuickLoginButtonVisibility();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -179,10 +277,14 @@ class _LoginPageState extends State<LoginPage> {
                 ? const Icon(Icons.check_circle, color: Colors.green) // 登录成功显示勾选图标
                 : null,
           ),
+          onChanged: (value) {
+            // 地址改变时更新一键登录按钮的可见性
+            _updateQuickLoginButtonVisibility();
+          },
         ),
         const SizedBox(height: 8),
         Text(
-          '请输入Openlist服务器的IP地址和端口', // 帮助文本
+          '请输入Openlist服务器的IP地址和端口',
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
             fontSize: 12,
@@ -196,6 +298,48 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildAccountSettings() {
     return Column(
       children: [
+        // 一键登录按钮（条件显示）
+        if (_showQuickLoginButton && !widget.isLoggedIn) ...[
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _isLoggingIn ? null : _handleQuickLogin,
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isLoggingIn
+                  ? const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text('登录中...'),
+                      ],
+                    )
+                  : const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.quickreply),
+                        SizedBox(width: 8),
+                        Text('使用保存的信息登录'),
+                      ],
+                    ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        
         if (widget.isLoggedIn) ...[ // 如果已登录，显示用户信息和退出按钮
           ListTile(
             leading: const Icon(Icons.person, color: Colors.green),
@@ -229,25 +373,122 @@ class _LoginPageState extends State<LoginPage> {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: _showLoginDialog, // 显示登录对话框
+              onPressed: _isLoggingIn ? null : _showLoginDialog,
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.login),
-                  SizedBox(width: 8),
-                  Text('登录 Openlist'),
-                ],
-              ),
+              child: _isLoggingIn
+                  ? const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text('登录中...'),
+                      ],
+                    )
+                  : const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.login),
+                        SizedBox(width: 8),
+                        Text('登录 Openlist'),
+                      ],
+                    ),
             ),
           ),
         ],
       ],
+    );
+  }
+
+  /// 处理一键登录
+  Future<void> _handleQuickLogin() async {
+    final hasAddress = _dataManager.rememberAddress && _dataManager.serverAddress.isNotEmpty;
+    final hasAccount = _dataManager.rememberAccount && _dataManager.username.isNotEmpty;
+    final hasPassword = _dataManager.rememberPassword;
+
+    // 检查是否有足够的信息进行一键登录
+    if (!hasAddress || (!hasAccount && !hasPassword)) {
+      _showSnackBar('没有足够的信息进行一键登录');
+      return;
+    }
+
+    // 如果三项都启用，直接尝试登录
+    if (hasAddress && hasAccount && hasPassword) {
+      await _performQuickLogin();
+    } else {
+      // 否则显示登录对话框并自动填充信息
+      await _showLoginDialogWithPrefilledInfo();
+    }
+  }
+
+  /// 执行一键登录
+  Future<void> _performQuickLogin() async {
+    setState(() {
+      _isLoggingIn = true;
+    });
+
+    try {
+      final password = await _dataManager.getPasswordFromSecureStorage();
+      
+      final result = await _openlistService.login(
+        address: _dataManager.serverAddress,
+        username: _dataManager.username,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        // 登录成功，更新认证状态
+        widget.onAuthStatusChanged(result['token'], _dataManager.username, true);
+        _showSnackBar('一键登录成功');
+      } else {
+        _showSnackBar(result['message']);
+      }
+    } catch (e) {
+      _showSnackBar('一键登录失败: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoggingIn = false;
+        });
+      }
+    }
+  }
+
+  /// 显示带预填充信息的登录对话框
+  Future<void> _showLoginDialogWithPrefilledInfo() async {
+    final TextEditingController usernameController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+    final TextEditingController otpController = TextEditingController();
+
+    // 预填充信息
+    if (_dataManager.rememberAddress) {
+      widget.addressController.text = _dataManager.serverAddress;
+    }
+    if (_dataManager.rememberAccount) {
+      usernameController.text = _dataManager.username;
+    }
+    if (_dataManager.rememberPassword) {
+      final password = await _dataManager.getPasswordFromSecureStorage();
+      passwordController.text = password;
+    }
+
+    await _showLoginDialogInternal(
+      usernameController: usernameController,
+      passwordController: passwordController,
+      otpController: otpController,
     );
   }
 
@@ -257,14 +498,31 @@ class _LoginPageState extends State<LoginPage> {
     final TextEditingController passwordController = TextEditingController();
     final TextEditingController otpController = TextEditingController();
 
-    bool isDialogOpen = true; // 跟踪对话框状态
+    // 如果启用了记住账号，预填充用户名
+    if (_dataManager.rememberAccount && _dataManager.username.isNotEmpty) {
+      usernameController.text = _dataManager.username;
+    }
+
+    await _showLoginDialogInternal(
+      usernameController: usernameController,
+      passwordController: passwordController,
+      otpController: otpController,
+    );
+  }
+
+  /// 内部登录对话框实现
+  Future<void> _showLoginDialogInternal({
+    required TextEditingController usernameController,
+    required TextEditingController passwordController,
+    required TextEditingController otpController,
+  }) async {
+    bool isDialogOpen = true;
 
     await showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            // 安全的setDialogState包装函数
             void safeSetDialogState(void Function() fn) {
               if (isDialogOpen && mounted) {
                 setDialogState(fn);
@@ -314,9 +572,9 @@ class _LoginPageState extends State<LoginPage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                          isDialogOpen = false; // 标记对话框已关闭
-                          Navigator.of(context).pop(); // 关闭按钮
-                        },
+                    isDialogOpen = false;
+                    Navigator.of(context).pop();
+                  },
                   child: const Text('关闭'),
                 ),
                 FilledButton(
@@ -326,7 +584,7 @@ class _LoginPageState extends State<LoginPage> {
                           safeSetDialogState(() {
                             _isLoggingIn = true; // 开始登录
                           });
-                          
+
                           await _performLogin(
                             usernameController.text.trim(),
                             passwordController.text.trim(),
@@ -398,7 +656,22 @@ class _LoginPageState extends State<LoginPage> {
       if (result['success'] == true) {
         // 登录成功，更新认证状态
         widget.onAuthStatusChanged(result['token'], username, true);
+        
+        // 保存用户数据（根据设置）
+        if (_dataManager.rememberAddress) {
+          await _dataManager.setServerAddress(address);
+        }
+        if (_dataManager.rememberAccount) {
+          await _dataManager.setUsername(username);
+        }
+        if (_dataManager.rememberPassword) {
+          await _dataManager.setPassword(password);
+        }
+        
         _showSnackBar('登录成功');
+        
+        // 更新一键登录按钮状态
+        _updateQuickLoginButtonVisibility();
       } else {
         _showSnackBar(result['message']);
       }
@@ -410,17 +683,16 @@ class _LoginPageState extends State<LoginPage> {
         });
         return;
       }
-      
-      // 根据错误类型提供更友好的错误信息
+
       String errorMessage = '登录出错: $e';
-      if (e.toString().contains('SocketException') || 
+      if (e.toString().contains('SocketException') ||
           e.toString().contains('Connection refused') ||
           e.toString().contains('Failed host lookup')) {
         errorMessage = '无法连接到服务器，请检查地址和网络连接';
       } else if (e.toString().contains('Timeout')) {
         errorMessage = '连接超时，请检查网络连接或服务器状态';
       }
-      
+
       _showSnackBar(errorMessage);
     } finally {
       // 确保重置登录状态
