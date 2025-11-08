@@ -37,10 +37,9 @@ class _OpenlistPageState extends State<OpenlistPage> {
     _addressController.text = _dataManager.serverAddress;
     _usernameController.text = _dataManager.username;
     
-    // 密码需要从安全存储加载
+    // 直接使用内存中的密码
     if (_dataManager.rememberPassword) {
-      final password = await _dataManager.getPasswordFromSecureStorage();
-      _passwordController.text = password;
+      _passwordController.text = _dataManager.password;
     }
 
     setState(() {

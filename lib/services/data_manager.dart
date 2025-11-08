@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// 数据管理器类 - 负责管理用户数据和设置
 class DataManager with ChangeNotifier {
@@ -13,6 +11,7 @@ class DataManager with ChangeNotifier {
   static const String _autoLoginKey = 'auto_login';
   static const String _serverAddressKey = 'server_address';
   static const String _usernameKey = 'username';
+  static const String _passwordKey = 'password'; // 使用 base64 编码存储
   static const String _lastSyncPathKey = 'last_sync_path';
   
   // 默认值
@@ -26,10 +25,6 @@ class DataManager with ChangeNotifier {
   factory DataManager() => _instance;
   DataManager._internal();
 
-  // 安全存储用于加密密钥
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  static const String _encryptionKeyKey = 'encryption_key';
-  
   // 内部状态
   bool _rememberAddress = _defaultRememberAddress;
   bool _rememberAccount = _defaultRememberAccount;
@@ -37,6 +32,7 @@ class DataManager with ChangeNotifier {
   bool _autoLogin = _defaultAutoLogin;
   String _serverAddress = '';
   String _username = '';
+  String _password = ''; // 明文密码（仅在内存中）
   String _lastSyncPath = '';
 
   /// 初始化数据管理器
@@ -55,92 +51,44 @@ class DataManager with ChangeNotifier {
     // 加载用户名
     _username = prefs.getString(_usernameKey) ?? '';
     
+    // 加载密码（base64 解码）
+    final encodedPassword = prefs.getString(_passwordKey) ?? '';
+    if (encodedPassword.isNotEmpty) {
+      try {
+        _password = _decodePassword(encodedPassword);
+      } catch (e) {
+        print('密码解码失败: $e');
+        // 解码失败时清除密码
+        await prefs.remove(_passwordKey);
+        _password = '';
+      }
+    }
+    
     // 加载上次同步路径
     _lastSyncPath = prefs.getString(_lastSyncPathKey) ?? '';
-    
-    // 如果启用了记住密码，从安全存储加载加密的密码
-    if (_rememberPassword) {
-      await _loadEncryptedPassword();
-    }
     
     notifyListeners();
   }
 
-  /// 获取加密密钥，如果不存在则生成新的
-  Future<encrypt.Key> _getEncryptionKey() async { // 使用前缀
-    String? keyString = await _secureStorage.read(key: _encryptionKeyKey);
-    
-    if (keyString == null) {
-      // 生成新的256位密钥
-      final key = encrypt.Key.fromSecureRandom(32); // 使用前缀
-      keyString = base64.encode(key.bytes);
-      await _secureStorage.write(key: _encryptionKeyKey, value: keyString);
-      return key;
-    }
-    
-    return encrypt.Key.fromBase64(keyString); // 使用前缀
-  }
-
-  /// 加密密码
-  Future<String> _encryptPassword(String password) async {
+  /// 使用 base64 编码密码
+  String _encodePassword(String password) {
     try {
-      final key = await _getEncryptionKey();
-      final iv = encrypt.IV.fromLength(16); // 使用前缀
-      final encrypter = encrypt.Encrypter(encrypt.AES(key)); // 使用前缀
-      final encrypted = encrypter.encrypt(password, iv: iv);
-      return encrypted.base64;
+      final bytes = utf8.encode(password);
+      return base64.encode(bytes);
     } catch (e) {
-      print('密码加密失败: $e');
+      print('密码编码失败: $e');
       return '';
     }
   }
 
-  /// 解密密码
-  Future<String> _decryptPassword(String encryptedPassword) async {
+  /// 使用 base64 解码密码
+  String _decodePassword(String encodedPassword) {
     try {
-      final key = await _getEncryptionKey();
-      final iv = encrypt.IV.fromLength(16); // 使用前缀
-      final encrypter = encrypt.Encrypter(encrypt.AES(key)); // 使用前缀
-      final decrypted = encrypter.decrypt64(encryptedPassword, iv: iv);
-      return decrypted;
+      final bytes = base64.decode(encodedPassword);
+      return utf8.decode(bytes);
     } catch (e) {
-      print('密码解密失败: $e');
-      return '';
-    }
-  }
-
-  /// 从安全存储加载加密的密码
-  Future<void> _loadEncryptedPassword() async {
-    // 密码存储在安全存储中
-    // 这里我们只需要验证是否存储了密码，实际解密在需要时进行
-  }
-
-  /// 保存密码到安全存储
-  Future<void> _savePasswordToSecureStorage(String password) async {
-    if (password.isEmpty) {
-      await _secureStorage.delete(key: 'encrypted_password');
-      return;
-    }
-    
-    try {
-      final encryptedPassword = await _encryptPassword(password);
-      await _secureStorage.write(key: 'encrypted_password', value: encryptedPassword);
-    } catch (e) {
-      print('保存密码失败: $e');
-    }
-  }
-
-  /// 从安全存储获取密码
-  Future<String> getPasswordFromSecureStorage() async {
-    try {
-      final encryptedPassword = await _secureStorage.read(key: 'encrypted_password');
-      if (encryptedPassword == null || encryptedPassword.isEmpty) {
-        return '';
-      }
-      return await _decryptPassword(encryptedPassword);
-    } catch (e) {
-      print('获取密码失败: $e');
-      return '';
+      print('密码解码失败: $e');
+      throw Exception('密码解码失败: $e');
     }
   }
 
@@ -151,13 +99,14 @@ class DataManager with ChangeNotifier {
   bool get autoLogin => _autoLogin;
   String get serverAddress => _serverAddress;
   String get username => _username;
+  String get password => _password; // 返回内存中的密码
   String get lastSyncPath => _lastSyncPath;
 
   /// 检查是否可以使用一键登录（有足够的信息）
   bool get canUseQuickLogin {
     bool hasAddress = _rememberAddress && _serverAddress.isNotEmpty;
     bool hasAccount = _rememberAccount && _username.isNotEmpty;
-    bool hasPassword = _rememberPassword;
+    bool hasPassword = _rememberPassword && _password.isNotEmpty;
     
     // 至少需要地址和账号密码中的一项
     return hasAddress && (hasAccount || hasPassword);
@@ -168,7 +117,8 @@ class DataManager with ChangeNotifier {
     return _autoLogin && 
            _serverAddress.isNotEmpty && 
            _username.isNotEmpty && 
-           _rememberPassword;
+           _rememberPassword &&
+           _password.isNotEmpty;
   }
 
   /// 设置记住地址开关
@@ -207,7 +157,7 @@ class DataManager with ChangeNotifier {
     
     // 如果关闭记住密码，清除密码
     if (!value) {
-      await _savePasswordToSecureStorage('');
+      await setPassword('');
     }
     
     notifyListeners();
@@ -247,10 +197,14 @@ class DataManager with ChangeNotifier {
 
   /// 设置密码
   Future<void> setPassword(String password) async {
+    _password = password;
+    final prefs = await SharedPreferences.getInstance();
     if (_rememberPassword && password.isNotEmpty) {
-      await _savePasswordToSecureStorage(password);
+      final encodedPassword = _encodePassword(password);
+      await prefs.setString(_passwordKey, encodedPassword);
     } else {
-      await _savePasswordToSecureStorage('');
+      await prefs.remove(_passwordKey);
+      _password = '';
     }
     notifyListeners();
   }
@@ -267,6 +221,23 @@ class DataManager with ChangeNotifier {
     notifyListeners();
   }
 
+  /// 检查密码是否可解码
+  Future<bool> checkPasswordDecodable() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final encodedPassword = prefs.getString(_passwordKey) ?? '';
+      if (encodedPassword.isEmpty) {
+        return true; // 没有存储密码，视为可解码
+      }
+      
+      _decodePassword(encodedPassword);
+      return true;
+    } catch (e) {
+      print('密码解码检查失败: $e');
+      return false;
+    }
+  }
+
   /// 清除所有用户数据
   Future<void> clearAllData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -280,10 +251,8 @@ class DataManager with ChangeNotifier {
     // 清除用户数据
     await prefs.remove(_serverAddressKey);
     await prefs.remove(_usernameKey);
+    await prefs.remove(_passwordKey);
     await prefs.remove(_lastSyncPathKey);
-    
-    // 清除安全存储中的密码
-    await _secureStorage.delete(key: 'encrypted_password');
     
     // 重置内存状态
     _rememberAddress = _defaultRememberAddress;
@@ -292,6 +261,7 @@ class DataManager with ChangeNotifier {
     _autoLogin = _defaultAutoLogin;
     _serverAddress = '';
     _username = '';
+    _password = '';
     _lastSyncPath = '';
     
     notifyListeners();
