@@ -1,7 +1,6 @@
-
 import 'package:flutter/material.dart';
 import '../../services/openlist_service.dart';
-import '../../services/data_manager.dart'; // 导入 DataManager
+import '../../services/data_manager.dart';
 
 /// 登录页面组件
 class LoginPage extends StatefulWidget {
@@ -42,6 +41,13 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _initializePage() async {
     await _dataManager.init();
     
+    // 检查密码是否可解码，如果不可解码则清除相关设置
+    final isPasswordDecodable = await _dataManager.checkPasswordDecodable();
+    if (!isPasswordDecodable) {
+      await _dataManager.setRememberPassword(false);
+      await _dataManager.setAutoLogin(false);
+    }
+    
     // 如果启用了记住地址，自动填充地址
     if (_dataManager.rememberAddress && _dataManager.serverAddress.isNotEmpty) {
       widget.addressController.text = _dataManager.serverAddress;
@@ -51,7 +57,7 @@ class _LoginPageState extends State<LoginPage> {
     _updateQuickLoginButtonVisibility();
 
     // 尝试自动登录
-    if (!_isAutoLoginAttempted && _dataManager.canAutoLogin) {
+    if (!_isAutoLoginAttempted && _dataManager.canAutoLogin && !widget.isLoggedIn) {
       _isAutoLoginAttempted = true;
       await _performAutoLogin();
     }
@@ -80,8 +86,18 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final password = await _dataManager.getPasswordFromSecureStorage();
+      // 直接使用内存中的密码
+      final password = _dataManager.password;
       
+      // 检查密码是否获取成功
+      if (password.isEmpty) {
+        if (mounted) {
+          _showSnackBar('自动登录失败：密码无效，请重新设置');
+          _showAutoLoginFailedDialog();
+        }
+        return;
+      }
+
       final result = await _openlistService.login(
         address: _dataManager.serverAddress,
         username: _dataManager.username,
@@ -118,9 +134,6 @@ class _LoginPageState extends State<LoginPage> {
     if (_dataManager.rememberAddress) {
       widget.addressController.text = _dataManager.serverAddress;
     }
-    
-    // 注意：这里我们不自动填充密码，因为密码是加密存储的
-    // 用户需要手动输入密码
     
     _updateQuickLoginButtonVisibility();
   }
@@ -415,7 +428,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _handleQuickLogin() async {
     final hasAddress = _dataManager.rememberAddress && _dataManager.serverAddress.isNotEmpty;
     final hasAccount = _dataManager.rememberAccount && _dataManager.username.isNotEmpty;
-    final hasPassword = _dataManager.rememberPassword;
+    final hasPassword = _dataManager.rememberPassword && _dataManager.password.isNotEmpty;
 
     // 检查是否有足够的信息进行一键登录
     if (!hasAddress || (!hasAccount && !hasPassword)) {
@@ -439,8 +452,20 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final password = await _dataManager.getPasswordFromSecureStorage();
+      // 直接使用内存中的密码
+      final password = _dataManager.password;
       
+      // 检查密码是否有效
+      if (_dataManager.rememberPassword && password.isEmpty) {
+        if (mounted) {
+          _showSnackBar('一键登录失败：密码无效，请重新设置');
+          setState(() {
+            _isLoggingIn = false;
+          });
+        }
+        return;
+      }
+
       final result = await _openlistService.login(
         address: _dataManager.serverAddress,
         username: _dataManager.username,
@@ -481,8 +506,7 @@ class _LoginPageState extends State<LoginPage> {
       usernameController.text = _dataManager.username;
     }
     if (_dataManager.rememberPassword) {
-      final password = await _dataManager.getPasswordFromSecureStorage();
-      passwordController.text = password;
+      passwordController.text = _dataManager.password;
     }
 
     await _showLoginDialogInternal(
