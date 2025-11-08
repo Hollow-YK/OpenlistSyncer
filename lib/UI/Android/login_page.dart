@@ -57,7 +57,7 @@ class _LoginPageState extends State<LoginPage> {
     _updateQuickLoginButtonVisibility();
 
     // 尝试自动登录
-    if (!_isAutoLoginAttempted && _dataManager.canAutoLogin) {
+    if (!_isAutoLoginAttempted && _dataManager.canAutoLogin && !widget.isLoggedIn) {
       _isAutoLoginAttempted = true;
       await _performAutoLogin();
     }

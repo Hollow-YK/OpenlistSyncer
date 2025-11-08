@@ -10,7 +10,7 @@ class AboutPage extends StatefulWidget {
 
 /// 关于页面状态类
 class _AboutPageState extends State<AboutPage> {
-  String _appVersion = '0.0.2 - Beta 3'; // 应用版本
+  String _appVersion = '0.0.2 - Beta 4'; // 应用版本
   int _clickCount = 0; // 点击计数器
   bool _showHiddenText = false; // 是否显示隐藏文本
 

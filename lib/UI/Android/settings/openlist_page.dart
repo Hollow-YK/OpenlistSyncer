@@ -290,7 +290,7 @@ class _OpenlistPageState extends State<OpenlistPage> {
                           ),
                           _buildSwitchItem(
                             title: '自动登录',
-                            subtitle: '应用启动时自动尝试登录',
+                            subtitle: '进入登录页面时自动尝试登录',
                             value: _dataManager.autoLogin,
                             onChanged: _isAutoLoginDisabled ? null : _handleAutoLoginSwitchChange,
                             // 当所有记住功能都关闭时，禁用自动登录开关
