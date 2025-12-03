@@ -134,7 +134,7 @@
 
 ~~好像只有我自己~~
 
-[![Contributors](https://contrib.rocks/image?repo=Hollow-YK/OpenlistSyncer&max=105&columns=15)](https://github.com/Hollow-YK/OpenlistSyncer/graphs/contributors)
+[![Contributors](https://contributors-img.web.app/image?repo=Hollow-YK/OpenlistSyncer&max=105&columns=15)](https://github.com/Hollow-YK/OpenlistSyncer/graphs/contributors)
 
 ## 声明
 
