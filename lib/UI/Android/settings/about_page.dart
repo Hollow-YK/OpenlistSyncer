@@ -10,7 +10,7 @@ class AboutPage extends StatefulWidget {
 
 /// 关于页面状态类
 class _AboutPageState extends State<AboutPage> {
-  String _appVersion = '0.0.2 - Beta 4'; // 应用版本
+  String _appVersion = '0.0.2 - Beta 5'; // 应用版本
   int _clickCount = 0; // 点击计数器
   bool _showHiddenText = false; // 是否显示隐藏文本
 
@@ -51,11 +51,11 @@ class _AboutPageState extends State<AboutPage> {
                 color: Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(16),
               ),
-              /*child: Icon(
-                Icons.cloud_sync,
-                color: Colors.white,
-                size: 40,
-              ),*/
+              child: Image.asset(
+                'assets/icon/logo.png',
+                width: 40,
+                height: 40,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -75,13 +75,14 @@ class _AboutPageState extends State<AboutPage> {
             const SizedBox(height: 32),
             
             // 应用介绍卡片
-            GestureDetector(
-              onTap: _handleCardTap,
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          InkWell(
+            onTap: _handleCardTap,
+            borderRadius: BorderRadius.circular(12), // 匹配 Card 的圆角
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '应用介绍',

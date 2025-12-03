@@ -219,9 +219,10 @@ class OpenlistService {
     final encodedPath = _encodePath(downloadPath);
     
     // 构建下载URL
-    final downloadUrl = Uri.parse('http://$address/d/$encodedPath');
+    final downloadUrl = Uri.parse('http://$address/p/$encodedPath');
     
     final Map<String, String> queryParams = {};
+    queryParams['raw'] = 'true';
     if (sign != null && sign.isNotEmpty) {
       queryParams['sign'] = sign;
     }

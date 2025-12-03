@@ -1,4 +1,5 @@
 <div align="center">
+<img style="width: 128px; height: 128px;" src="logo.svg" alt="logo" />
 
 # Openlist 同步器
 
@@ -28,40 +29,77 @@
 
 ## 功能
 
-- 透過 API 登入 Openlist
+- 透過 API 登入 Openlist ，理論上支援 2FA
 - 將 Openlist 裡的資料夾同步到本地
-- 15種個人化主題配色，自動切換明暗模式
+- 記住 Openlist 資訊，進行自動登入
+- 15種個性化主題配色，自動切換明暗模式
+
+> [!Tip]
+>
+> 預設情況下，記住 Openlist 地址功能為開啟狀態。
+
+> [!Warning]
+>
+> 登入時，你的密碼可能會被其它程式透過部分手段取得。
+
+> [!Warning]
+>
+> 2FA 相關功能未經測試，可能存在 Bug 。
+
+> [!Caution]
+>
+> 密碼會被以Base64編碼後的形式儲存，不保證儲存的安全性。
+> 你可以理解為密碼是**明文**儲存的。
 
 ### 未來規劃
 
 *這些功能計劃在將來實現，但是現在還沒做
 
-- 將本地的資料夾同步到Openlist
+- 將本地的資料夾同步到 Openlist
 - 記住上次使用的資訊
 
 ## 使用說明
 
-僅在Android 14-16 進行過測試，不保證其它版本的相容性。
+僅在 Android 14-16 進行過測試，不保證其它版本的相容性。
 
 ### 準備工作
 
-- 你需要有一個使用 [OpenList](https://github.com/OpenListTeam/OpenList) 搭建的或 API 與 OpenList 相同的私有雲。
-- 你還需要有一個**基本路徑為`root`（根目錄）的**帳戶。（歡迎提交PR幫忙適配基本路徑不是`root`的帳戶。）
-- 安裝本軟體。你可以前往[Release](https://github.com/Hollow-YK/OpenlistSyncer/releases)下載相應版本的最新安裝包並安裝。如果你不知道安裝哪個版本，就直接下載並安裝檔名為`OpenlistSyncer-0.0.1-app-release.apk`形式的安裝包。
+- 你需要有一個使用 [OpenList](https://github.com/OpenListTeam/OpenList) 搭建的私有雲。
+- 你還需要有一個**基本路徑為 `root` （根目錄）的**帳戶。（歡迎提交 PR 幫忙適配基本路徑不是 `root` 的帳戶。）
+- 安裝本軟體。你可以前往 [Release](https://github.com/Hollow-YK/OpenlistSyncer/releases) 下載相應版本的最新安裝包並安裝。如果你不知道安裝哪個版本，就直接下載並安裝檔名為 `OpenlistSyncer-0.0.1-app-release.apk` 形式的安裝包。
 
-### 使用過程
+### 自動登入與記住Openlist資訊
 
-1. 配置好Openlist地址並登入Openlist帳號。注意，**僅支援基本路徑為`root`（根目錄）的帳戶**。
-2. 配置好源路徑（即要同步的Openlist路徑），並選擇本地路徑。
-3. 開始同步
+相關設定項可在 `設定->Openlist設定` 中找到。
+
+<details>
+
+#### 記住Openlist資訊
+
+預設情況下，記住 Openlist 地址功能將會啟用。開啟此功能時應用會儲存你的 Openlist 地址並在下次自動填入至登入頁面的相應輸入框。
+
+你可以在設定裡開啟記住 Openlist 帳號和記住 Openlist 密碼功能。
+
+> [!Caution]
+>
+> Openlist 地址與 Openlist 帳號將會被以明文的形式儲存。
+> Openlist 密碼會被以 Base64 編碼後的形式儲存，不保證儲存的安全性。（你可以理解為密碼是**明文**儲存的。）
+
+#### 自動登入
+
+在開啟了記住 Openlist 地址、記住 Openlist 帳號、記住 Openlist 密碼功能並儲存了以上資訊後，你可以開啟自動登入。
+
+開啟自動登入後，會在**每次進入登入頁面時**嘗試使用儲存的資訊登入。
+
+</details>
 
 ### 自行編譯
 
 <details>
 
 1. clone本倉庫
-2. 完成`flutter pub get`
-3. 執行`flutter build apk --release`打包 APK ，或`flutter build apk --split-per-abi`為每個 abi 打包 APK
+2. 完成 `flutter pub get`
+3. 執行 `flutter build apk --release` 打包 APK ，或 `flutter build apk --split-per-abi` 為每個 abi 打包 APK
 
 </details>
 
@@ -86,6 +124,7 @@
 ### 其它
 
 - 使用Flutter進行開發
+- ~~`README.md`照抄了我的另一個倉庫的README~~
 - `README.md`參考了[MaaAssistantArknights](https://github.com/MaaAssistantArknights/MaaAssistantArknights/)
 - `README.md`使用了[shields.io](https://shields.io/)、[contrib.rocks](https://contrib.rocks/)提供的內容
 
