@@ -1,4 +1,5 @@
 <div align="center">
+<img style="width: 128px; height: 128px;" src="logo.svg" alt="logo" />
 
 # Openlist 同步器
 
@@ -28,40 +29,77 @@
 
 ## 功能
 
-- 通过 API 登录 Openlist
+- 通过 API 登录 Openlist ，理论上支持 2FA
 - 将 Openlist 里的文件夹同步到本地
+- 记住 Openlist 信息，进行自动登录
 - 15种个性化主题配色，自动切换明暗模式
+
+> [!Tip]
+>
+> 默认情况下，记住 Openlist 地址功能为开启状态。
+
+> [!Warning]
+>
+> 登录时，你的密码可能会被其它程序通过部分手段获取。
+
+> [!Warning]
+>
+> 2FA 相关功能未经测试，可能存在 Bug 。
+
+> [!Caution]
+>
+> 密码会被以Base64编码后的形式保存，不保证储存的安全性。
+> 你可以理解为密码是**明文**储存的。
 
 ### 画饼
 
 *这些功能计划在将来实现，但是现在还没做
 
-- 将本地的文件夹同步到Openlist
+- 将本地的文件夹同步到 Openlist
 - 记住上次使用的信息
 
 ## 使用说明
 
-仅在Android 14-16 进行过测试，不保证其它版本的兼容性。
+仅在 Android 14-16 进行过测试，不保证其它版本的兼容性。
 
 ### 准备工作
 
-- 你需要有一个使用 [OpenList](https://github.com/OpenListTeam/OpenList) 搭建的或 API 与 OpenList 相同的私有云。<!--（使用到了包括 [User logout](https://fox.oplist.org/364155678e0)、[User login](https://fox.oplist.org/364155681e0)、[List directory contents](https://fox.oplist.org/364155732e0)、[Get file or directory info](https://fox.oplist.org/364155733e0)、[Get directory tree](https://fox.oplist.org/364155735e0)）在内的多个API-->
-- 你还需要有一个**基本路径为`root`（根目录）的**账户。（欢迎提交PR帮忙适配基本路径不是`root`的账户。）
-- 安装本软件。你可以前往[Release](https://github.com/Hollow-YK/OpenlistSyncer/releases)下载相应版本的最新安装包并安装。如果你不知道安装哪个版本，就直接下载并安装文件名为`OpenlistSyncer-0.0.1-app-release.apk`形式的安装包。
+- 你需要有一个使用 [OpenList](https://github.com/OpenListTeam/OpenList) 搭建的<!--或 API 与 OpenList 相同的-->私有云。<!--（使用到了包括 [User logout](https://fox.oplist.org/364155678e0)、[User login](https://fox.oplist.org/364155681e0)、[List directory contents](https://fox.oplist.org/364155732e0)、[Get file or directory info](https://fox.oplist.org/364155733e0)、[Get directory tree](https://fox.oplist.org/364155735e0)）在内的多个API-->
+- 你还需要有一个**基本路径为 `root` （根目录）的**账户。（欢迎提交 PR 帮忙适配基本路径不是 `root` 的账户。）
+- 安装本软件。你可以前往 [Release](https://github.com/Hollow-YK/OpenlistSyncer/releases) 下载相应版本的最新安装包并安装。如果你不知道安装哪个版本，就直接下载并安装文件名为 `OpenlistSyncer-0.0.1-app-release.apk` 形式的安装包。
 
-### 使用过程
+### 自动登录与记住Openlist信息
 
-1. 配置好Openlist地址并登录Openlist账号。注意，**仅支持基本路径为`root`（根目录）的账户**。
-2. 配置好源路径（即要同步的Openlist路径），并选择本地路径。
-3. 开始同步
+相关设置项可在 `设置->Openlist设置` 中找到。
+
+<details>
+
+#### 记住Openlist信息
+
+默认情况下，记住 Openlist 地址功能将会启用。开启此功能时应用会保存你的 Openlist 地址并在下次自动填充至登录页面的相应输入框。
+
+你可以在设置里打开记住 Openlist 账号和记住 Openlist 密码功能。
+
+> [!Caution]
+>
+> Openlist 地址与 Openlist 账号将会被以明文的形式保存。
+> Openlist 密码会被以 Base64 编码后的形式保存，不保证储存的安全性。（你可以理解为密码是**明文**储存的。）
+
+#### 自动登录
+
+在开启了记住 Openlist 地址、记住 Openlist 账号、记住 Openlist 密码功能并保存了以上信息后，你可以开启自动登录。
+
+开启自动登录后，会在**每次进入登录页面时**尝试使用保存的信息登录。
+
+</details>
 
 ### 自行编译
 
 <details>
 
 1. clone本仓库
-2. 完成`flutter pub get`
-3. 执行`flutter build apk --release`打包 APK ，或`flutter build apk --split-per-abi`为每个 abi 打包 APK
+2. 完成 `flutter pub get`
+3. 执行 `flutter build apk --release` 打包 APK ，或 `flutter build apk --split-per-abi` 为每个 abi 打包 APK
 
 </details>
 

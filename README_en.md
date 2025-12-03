@@ -1,4 +1,5 @@
 <div align="center">
+<img style="width: 128px; height: 128px;" src="logo.svg" alt="logo" />
 
 # Openlist Syncer
 
@@ -28,34 +29,71 @@ Please go to [Releases](https://github.com/Hollow-YK/OpenlistSyncer/releases) to
 
 ## Features
 
-- Log in to Openlist via API
-- Sync folders from Openlist to your local device
+- Login to Openlist via API, theoretically supports 2FA
+- Synchronize folders from Openlist to local device
+- Remember Openlist information for automatic login
 - 15 personalized theme colors with automatic light/dark mode switching
+
+> [!Tip]
+>
+> By default, the "Remember Openlist address" feature is enabled.
+
+> [!Warning]
+>
+> During login, your password might be obtained by other programs through certain means.
+
+> [!Warning]
+>
+> 2FA related features have not been tested and may contain bugs.
+
+> [!Caution]
+>
+> Passwords are saved in Base64 encoded form, storage security is not guaranteed.
+> You can consider passwords as stored in **plain text**.
 
 ### Future Plans
 
-*These features are planned for future implementation but are not currently available.
+*These features are planned for future implementation but not yet available
 
 - Sync local folders to Openlist
-- Remember previously used information
+- Remember last used information
 
-## Instructions
+## Usage Instructions
 
 Tested only on Android 14-16. Compatibility with other versions is not guaranteed.
 
-### Prerequisites
+### Preparation
 
-- You need to have a private cloud set up using [OpenList](https://github.com/OpenListTeam/OpenList) or one with an API identical to OpenList.
-- You also need an account with a **base path of `root`** (the root directory). (PRs are welcome to help adapt for accounts where the base path is not `root`.)
-- Install the application. You can go to [Releases](https://github.com/Hollow-YK/OpenlistSyncer/releases) to download the latest installation package for the corresponding version. If you are unsure which version to install, simply download and install the package named in the format `OpenlistSyncer-0.0.1-app-release.apk`.
+- You need to have a private cloud built using [OpenList](https://github.com/OpenListTeam/OpenList).
+- You also need an account with **base path as `root`** (the root directory). (PRs are welcome to help adapt accounts with base path is not `root`.)
+- Install this application. You can go to [Release](https://github.com/Hollow-YK/OpenlistSyncer/releases) to download the latest installation package for the corresponding version and install it. If you don't know which version to install, simply download and install the package named in the format `OpenlistSyncer-0.0.1-app-release.apk`.
 
-### Usage Process
+### Automatic Login & Remembering Openlist Information
 
-1.  Configure the Openlist address and log in to your Openlist account. Note: **Only accounts with a base path of `root` are supported**.
-2.  Configure the source path (the Openlist path to sync from) and select the local path.
-3.  Start the sync.
+Related settings can be found in `Settings -> Openlist Settings`.
 
-### Building from Source
+<details>
+
+#### Remember Openlist Information
+
+By default, the "Remember Openlist address" feature is enabled. When this feature is enabled, the app will save your Openlist address and automatically fill it into the corresponding input field on the login page next time.
+
+You can enable "Remember Openlist account" and "Remember Openlist password" features in settings.
+
+> [!Caution]
+>
+> Openlist address and Openlist account will be saved in plain text.
+> Openlist password will be saved in Base64 encoded form, storage security is not guaranteed. (You can consider passwords as stored in **plain text**.)
+
+#### Automatic Login
+
+After enabling "Remember Openlist address", "Remember Openlist account", and "Remember Openlist password" features and saving the above information, you can enable automatic login.
+
+When automatic login is enabled, it will attempt to log in using the saved information **every time you enter the login page**.
+
+</details>
+
+### Building fron source
 
 <details>
 
