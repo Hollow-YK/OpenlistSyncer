@@ -133,7 +133,7 @@ Thanks to all friends who participated in development/testing (\*´▽｀)ノノ
 
 ~~Seems like it's just me for now~~
 
-[![Contributors](https://contrib.rocks/image?repo=Hollow-YK/Yunhu_MinecraftStatus_Bot&max=105&columns=15)](https://github.com/Hollow-YK/Yunhu_MinecraftStatus_Bot/graphs/contributors)
+[![Contributors](https://contributors-img.web.app/image?repo=Hollow-YK/OpenlistSyncer&max=105&columns=15)](https://github.com/Hollow-YK/OpenlistSyncer/graphs/contributors)
 
 ## Disclaimer
 
