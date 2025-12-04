@@ -32,11 +32,12 @@ Please go to [Releases](https://github.com/Hollow-YK/OpenlistSyncer/releases) to
 - Login to Openlist via API, theoretically supports 2FA
 - Synchronize folders from Openlist to local device
 - Remember Openlist information for automatic login
+- Remember the last used source path for convenience
 - 15 personalized theme colors with automatic light/dark mode switching
 
 > [!Tip]
 >
-> By default, the "Remember Openlist address" feature is enabled.
+> By default, the "Remember Openlist address" and "Remember the last used source path" feature is enabled.
 
 > [!Warning]
 >
@@ -56,7 +57,6 @@ Please go to [Releases](https://github.com/Hollow-YK/OpenlistSyncer/releases) to
 *These features are planned for future implementation but not yet available
 
 - Sync local folders to Openlist
-- Remember last used information
 
 ## Usage Instructions
 
