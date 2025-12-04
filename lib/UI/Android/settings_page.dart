@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'settings/openlist_page.dart'; // 导入Openlist设置页面
+import 'settings/sync_page.dart'; // 导入同步设置页面
 import 'settings/theme_page.dart'; // 导入主题设置页面
 import 'settings/about_page.dart'; // 导入关于页面
 
@@ -128,7 +129,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   subtitle: '记住路径等',
                   onTap: () {
                     // 跳转到同步设置
-                    _showSnackBar('还没写完，下次一定');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SyncSettingsPage(),
+                      ),
+                    );
                   },
                   trailing: const Icon(Icons.chevron_right),
                 ),

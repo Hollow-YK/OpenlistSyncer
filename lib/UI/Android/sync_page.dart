@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart'; // 权限处理
 import 'package:path_provider/path_provider.dart'; // 路径提供器
 import '../../services/openlist_service.dart'; // 导入Openlist服务
 import '../../services/file_manager.dart'; // 导入文件管理器
+import '../../services/data_manager.dart'; // 导入数据管理器
 
 /// 同步页面组件
 class SyncPage extends StatefulWidget {
@@ -32,6 +33,7 @@ class _SyncPageState extends State<SyncPage> {
   final TextEditingController _localPathController = TextEditingController(); // 本地路径控制器
   final OpenlistService _openlistService = OpenlistService(); // Openlist服务实例
   final FileManager _fileManager = FileManager(); // 文件管理器实例
+  final DataManager _dataManager = DataManager(); // 数据管理器实例
 
   bool _isSyncing = false; // 同步状态标识
   bool _hasStoragePermission = false; // 存储权限状态
@@ -52,8 +54,14 @@ class _SyncPageState extends State<SyncPage> {
 
   /// 初始化应用
   Future<void> _initializeApp() async {
+    await _dataManager.init(); // 初始化数据管理器
     await _checkPermissions(); // 检查权限
     await _initializeLocalPath(); // 初始化本地路径
+    
+    // 如果启用了记住源路径，自动填充源路径
+    if (_dataManager.rememberSourcePath && _dataManager.sourcePath.isNotEmpty) {
+      _sourcePathController.text = _dataManager.sourcePath;
+    }
   }
 
   /// 检查权限
@@ -336,6 +344,11 @@ class _SyncPageState extends State<SyncPage> {
       }
 
       _addLog('同步完成: $successCount 成功, $failCount 失败');
+      
+      // 同步成功，保存源路径（根据设置）
+      if (_dataManager.rememberSourcePath) {
+        await _dataManager.setSourcePath(_sourcePathController.text.trim());
+      }
       
       if (failCount == 0) {
         _showSnackBar('同步完成！共同步 $_totalFiles 个文件');

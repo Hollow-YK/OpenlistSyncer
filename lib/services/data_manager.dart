@@ -13,12 +13,15 @@ class DataManager with ChangeNotifier {
   static const String _usernameKey = 'username';
   static const String _passwordKey = 'password'; // 使用 base64 编码存储
   static const String _lastSyncPathKey = 'last_sync_path';
+  static const String _rememberSourcePathKey = 'remember_source_path';
+  static const String _sourcePathKey = 'source_path';
   
   // 默认值
   static const bool _defaultRememberAddress = true;
   static const bool _defaultRememberAccount = false;
   static const bool _defaultRememberPassword = false;
   static const bool _defaultAutoLogin = false;
+  static const bool _defaultRememberSourcePath = true;
 
   // 单例模式
   static final DataManager _instance = DataManager._internal();
@@ -30,10 +33,12 @@ class DataManager with ChangeNotifier {
   bool _rememberAccount = _defaultRememberAccount;
   bool _rememberPassword = _defaultRememberPassword;
   bool _autoLogin = _defaultAutoLogin;
+  bool _rememberSourcePath = _defaultRememberSourcePath;
   String _serverAddress = '';
   String _username = '';
   String _password = ''; // 明文密码（仅在内存中）
   String _lastSyncPath = '';
+  String _sourcePath = '';
 
   /// 初始化数据管理器
   Future<void> init() async {
@@ -44,6 +49,7 @@ class DataManager with ChangeNotifier {
     _rememberAccount = prefs.getBool(_rememberAccountKey) ?? _defaultRememberAccount;
     _rememberPassword = prefs.getBool(_rememberPasswordKey) ?? _defaultRememberPassword;
     _autoLogin = prefs.getBool(_autoLoginKey) ?? _defaultAutoLogin;
+    _rememberSourcePath = prefs.getBool(_rememberSourcePathKey) ?? _defaultRememberSourcePath;
     
     // 加载服务器地址
     _serverAddress = prefs.getString(_serverAddressKey) ?? '';
@@ -66,6 +72,9 @@ class DataManager with ChangeNotifier {
     
     // 加载上次同步路径
     _lastSyncPath = prefs.getString(_lastSyncPathKey) ?? '';
+    
+    // 加载源路径
+    _sourcePath = prefs.getString(_sourcePathKey) ?? '';
     
     notifyListeners();
   }
@@ -97,10 +106,12 @@ class DataManager with ChangeNotifier {
   bool get rememberAccount => _rememberAccount;
   bool get rememberPassword => _rememberPassword;
   bool get autoLogin => _autoLogin;
+  bool get rememberSourcePath => _rememberSourcePath;
   String get serverAddress => _serverAddress;
   String get username => _username;
   String get password => _password; // 返回内存中的密码
   String get lastSyncPath => _lastSyncPath;
+  String get sourcePath => _sourcePath;
 
   /// 检查是否可以使用一键登录（有足够的信息）
   bool get canUseQuickLogin {
@@ -171,6 +182,20 @@ class DataManager with ChangeNotifier {
     notifyListeners();
   }
 
+  /// 设置记住源路径开关
+  Future<void> setRememberSourcePath(bool value) async {
+    _rememberSourcePath = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_rememberSourcePathKey, value);
+    
+    // 如果关闭记住源路径，清除源路径
+    if (!value) {
+      await setSourcePath('');
+    }
+    
+    notifyListeners();
+  }
+
   /// 设置服务器地址
   Future<void> setServerAddress(String address) async {
     _serverAddress = address;
@@ -217,6 +242,18 @@ class DataManager with ChangeNotifier {
       await prefs.setString(_lastSyncPathKey, path);
     } else {
       await prefs.remove(_lastSyncPathKey);
+    }
+    notifyListeners();
+  }
+
+  /// 设置源路径
+  Future<void> setSourcePath(String path) async {
+    _sourcePath = path;
+    final prefs = await SharedPreferences.getInstance();
+    if (_rememberSourcePath && path.isNotEmpty) {
+      await prefs.setString(_sourcePathKey, path);
+    } else {
+      await prefs.remove(_sourcePathKey);
     }
     notifyListeners();
   }
