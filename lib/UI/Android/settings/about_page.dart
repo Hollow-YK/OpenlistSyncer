@@ -154,7 +154,7 @@ class _AboutPageState extends State<AboutPage> {
                     _buildFeatureItem(
                       context,
                       icon: Icons.security,
-                      title: '安全认证',
+                      title: '用户登录',
                       description: '支持用户名密码和两步验证登录',
                     ),
                     _buildFeatureItem(
