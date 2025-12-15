@@ -1,7 +1,7 @@
 name: Openlist_Syncer
 description: "Openlist 同步工具 - 一个用于同步 Openlist 服务器文件的 Flutter 应用。Openlist Sync Tool - A Flutter application for syncing files from Openlist server."
 publish_to: 'none'
-version: 0.0.2-beta6+1
+version: 0.0.2+1
 
 environment:
   sdk: ^3.9.2

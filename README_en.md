@@ -23,6 +23,10 @@ English | [简体中文](README.md) | [繁體中文](README_zh_tw.md)
 
 </div>
 
+> [!Caution]
+>
+> The Simplified Chinese version of this document is the original and authoritative version. Translations in other languages may contain errors or be outdated. In case of any discrepancy or ambiguity, please refer to the [Simplified Chinese version](README.md).
+
 ## Download & Installation
 
 Please go to [Releases](https://github.com/Hollow-YK/OpenlistSyncer/releases) to download the latest installation package.
@@ -72,8 +76,6 @@ Tested only on Android 14-16. Compatibility with other versions is not guarantee
 
 Related settings can be found in `Settings -> Openlist Settings`.
 
-<details>
-
 #### Remember Openlist Information
 
 By default, the "Remember Openlist address" feature is enabled. When this feature is enabled, the app will save your Openlist address and automatically fill it into the corresponding input field on the login page next time.
@@ -90,8 +92,6 @@ You can enable "Remember Openlist account" and "Remember Openlist password" feat
 After enabling "Remember Openlist address", "Remember Openlist account", and "Remember Openlist password" features and saving the above information, you can enable automatic login.
 
 When automatic login is enabled, it will attempt to log in using the saved information **every time you enter the login page**.
-
-</details>
 
 ### Building fron source
 
@@ -137,7 +137,7 @@ Thanks to all friends who participated in development/testing (\*´▽｀)ノノ
 
 ## Disclaimer
 
-- This software is open-sourced under the [GNU Affero General Public License v3.0 only](https://spdx.org/licenses/AGPL-3.0-only.html).
+- This software is open-sourced under the [GNU Affero General Public License v3.0 only](LICENSE).
 - This software is open-source and free, intended solely for learning and communication purposes.
 - Disclaimer: The use of this software for any purpose is unrelated to the developers, who assume no responsibility for any actions taken by users.
 

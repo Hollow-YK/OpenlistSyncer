@@ -23,6 +23,10 @@
 
 </div>
 
+> [!Caution]
+>
+> 本文檔的簡體中文版本為官方原始版本。其他語言翻譯版本可能存在翻譯錯誤或更新延遲的情況，如有任何歧義或疑問，請以[簡體中文版本](README.md)為準。
+
 ## 下載與安裝
 
 請前往[Release](https://github.com/Hollow-YK/OpenlistSyncer/releases)下載最新安裝包並安裝。
@@ -72,8 +76,6 @@
 
 相關設定項可在 `設定->Openlist設定` 中找到。
 
-<details>
-
 #### 記住Openlist資訊
 
 預設情況下，記住 Openlist 地址功能將會啟用。開啟此功能時應用會儲存你的 Openlist 地址並在下次自動填入至登入頁面的相應輸入框。
@@ -90,8 +92,6 @@
 在開啟了記住 Openlist 地址、記住 Openlist 帳號、記住 Openlist 密碼功能並儲存了以上資訊後，你可以開啟自動登入。
 
 開啟自動登入後，會在**每次進入登入頁面時**嘗試使用儲存的資訊登入。
-
-</details>
 
 ### 自行編譯
 
@@ -138,7 +138,7 @@
 
 ## 聲明
 
-- 本軟體使用 [GNU Affero General Public License v3.0 only](https://spdx.org/licenses/AGPL-3.0-only.html) 開源。
+- 本軟體使用 [GNU Affero General Public License v3.0 only](LICENSE) 開源。
 - 本軟體開源、免費，僅供學習交流使用。
 - 免責聲明：將此軟體用於任何用途均與開發者無關，不對使用者的任何行為負責。
 

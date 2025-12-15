@@ -72,8 +72,6 @@
 
 相关设置项可在 `设置->Openlist设置` 中找到。
 
-<details>
-
 #### 记住Openlist信息
 
 默认情况下，记住 Openlist 地址功能将会启用。开启此功能时应用会保存你的 Openlist 地址并在下次自动填充至登录页面的相应输入框。
@@ -90,8 +88,6 @@
 在开启了记住 Openlist 地址、记住 Openlist 账号、记住 Openlist 密码功能并保存了以上信息后，你可以开启自动登录。
 
 开启自动登录后，会在**每次进入登录页面时**尝试使用保存的信息登录。
-
-</details>
 
 ### 自行编译
 
@@ -138,7 +134,7 @@
 
 ## 声明
 
-- 本软件使用 [GNU Affero General Public License v3.0 only](https://spdx.org/licenses/AGPL-3.0-only.html) 开源。
+- 本软件使用 [GNU Affero General Public License v3.0 - only](LICENSE) 开源。
 - 本软件开源、免费，仅供学习交流使用。
 - 免责声明：将此软件用于任何用途均与开发者无关，不对使用者的任何行为负责。
 

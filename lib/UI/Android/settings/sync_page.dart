@@ -92,7 +92,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                             value: _dataManager.rememberSourcePath,
                             onChanged: _handleRememberSourcePathChange,
                           ),
-                          const SizedBox(height: 16),
+                          /*const SizedBox(height: 16),
                           _buildSwitchItem(
                             title: '记住本地路径',
                             subtitle: '自动保存上次使用的本地路径',
@@ -100,7 +100,10 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                             onChanged: (bool value) {
                               _showSnackBar('还没写完，下次一定');
                             },
-                          ),
+                            //这个东西估计要有Bug，要不还是不写了吧QAQ
+                            //要不以后这样，测试版有这个没什么用的开关，正式版就注释掉
+                            //不管了就这样吧awa
+                          ),*/
                         ],
                       ),
                     ),
